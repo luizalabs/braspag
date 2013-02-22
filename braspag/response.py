@@ -201,3 +201,58 @@ class BilletDataResponse(BilletResponse):
         self._fields['account'] = 'Account'
 
         super(BilletDataResponse, self).__init__(xml)
+
+
+class BraspagOrderIdResponse(PagadorResponse):
+
+    def __init__(self, xml):
+        self._fields = getattr(self, '_fields', {})
+
+        self._fields['braspag_order_id'] = 'BraspagOrderId'
+
+        super(BraspagOrderIdResponse, self).__init__(xml)
+
+
+class CustomerDataResponse(PagadorResponse):
+
+    def __init__(self, xml):
+        self._fields = getattr(self, '_fields', {})
+
+        self._fields['customer_identity'] = 'CustomerIdentity'
+        self._fields['customer_name'] = 'CustomerName'
+        self._fields['customer_email'] = 'CustomerEmail'
+        self._fields['street'] = 'Street'
+        self._fields['number'] = 'Number'
+        self._fields['complement'] = 'Complement'
+        self._fields['district'] = 'District'
+        self._fields['zipcode'] = 'ZipCode'
+        self._fields['city'] = 'City'
+        self._fields['state'] = 'State'
+        self._fields['country'] = 'Country'
+
+        super(CustomerDataResponse, self).__init__(xml)
+
+
+class TransactionDataResponse(PagadorResponse):
+
+    def __init__(self, xml):
+        self._fields = getattr(self, '_fields', {})
+
+        self._fields['order_id'] = 'OrderId'
+        self._fields['acquirer_transaction_id'] = 'AcquirerTransactionId'
+        self._fields['payment_method'] = ('PaymentMethod', int)
+        self._fields['payment_method_name'] = 'PaymentMethodName'
+        self._fields['error_code'] = 'ErrorCode'
+        self._fields['error_message'] = 'ErrorMessage'
+        self._fields['authorization_code'] = 'AuthorizationCode'
+        self._fields['number_of_payments'] = ('NumberOfPayments', int)
+        self._fields['currency'] = 'Currency'
+        self._fields['country'] = 'Country'
+        self._fields['transaction_type'] = 'TransactionType'
+        self._fields['status'] = ('Status', int)
+        self._fields['received_date'] = ('ReceivedDate', to_date)
+        self._fields['captured_date'] = ('CapturedDate', to_date)
+        self._fields['voided_date'] = ('VoidedDate', to_date)
+        self._fields['credit_card_token'] = 'CreditCardToken'
+
+        super(TransactionDataResponse, self).__init__(xml)

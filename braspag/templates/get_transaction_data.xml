@@ -1,0 +1,11 @@
+{% extends 'base.xml' %}
+{% block body_content %}
+<GetTransactionData xmlns="https://www.pagador.com.br/query/pagadorquery">
+  <transactionDataRequest>
+    <RequestId>{{ request_id }}</RequestId>
+    <Version>1.0</Version>
+    <MerchantId>{{ merchant_id }}</MerchantId>
+    <BraspagTransactionId>{{ transaction_id }}</BraspagTransactionId>
+  </transactionDataRequest>
+</GetTransactionData>
+{% endblock %}
