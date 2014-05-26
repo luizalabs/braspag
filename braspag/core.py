@@ -12,7 +12,9 @@ import jinja2
 from .utils import spaceless, is_valid_guid
 from .exceptions import BraspagHttpResponseException
 from .response import CreditCardAuthorizationResponse, BilletResponse, \
-                      BilletDataResponse, CreditCardCancelResponse
+                      BilletDataResponse, CreditCardCancelResponse, \
+                      BraspagOrderIdResponse, CustomerDataResponse, \
+                      TransactionDataResponse
 from xml.dom import minidom
 from xml.etree import ElementTree
 from decimal import Decimal, InvalidOperation
@@ -272,3 +274,50 @@ with `transaction_types` 1 or 3.
         xml_request = self._render_template('get_billet_data.xml', context)
         xml_response = self._request(spaceless(xml_request), query=True)
         return BilletDataResponse(xml_response)
+
+    def get_braspag_order_id(self, transaction_id):
+        """All arguments supplied to this method must be keyword arguments.
+
+:arg transaction_id: The id of the transaction generated previously by
+*issue_billet*
+
+:returns: :class:`~braspag.BraspagOrderIdResponse`
+
+"""
+        assert is_valid_guid(transaction_id), 'Invalid Transaction ID'
+
+        context = {'transaction_id': transaction_id}
+        xml_request = self._render_template('get_braspag_order_id.xml', context)
+        xml_response = self._request(spaceless(xml_request), query=True)
+        return BraspagOrderIdResponse(xml_response)
+
+    def get_customer_data(self, order_id):
+        """All arguments supplied to this method must be keyword arguments.
+
+:arg order_id: The id of the order generated previously by *get_order_id*
+passing trasaction_id as argument
+
+:returns: :class:`~braspag.CustomerDataResponse`
+
+"""
+        assert is_valid_guid(order_id), 'Invalid Order ID'
+
+        context = {'order_id': order_id}
+        xml_request = self._render_template('get_customer_data.xml', context)
+        xml_response = self._request(spaceless(xml_request), query=True)
+        return CustomerDataResponse(xml_response)
+
+    def get_transaction_data(self, transaction_id):
+        """All arguments supplied to this method must be keyword arguments.
+
+:arg transaction_id: The id of the transaction
+
+:returns: :class:`~braspag.TransactionDataResponse`
+
+"""
+        assert is_valid_guid(transaction_id), 'Invalid Order ID'
+
+        context = {'transaction_id': transaction_id}
+        xml_request = self._render_template('get_transaction_data.xml', context)
+        xml_response = self._request(spaceless(xml_request), query=True)
+        return TransactionDataResponse(xml_response)
