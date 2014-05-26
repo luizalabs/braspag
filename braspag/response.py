@@ -88,22 +88,28 @@ class PagadorResponse(object):
 
         xml = ET.fromstring(xml)
         for elem in xml.iter():
-            if elem.text:
+            # if elem.text:
                 for field, tag_info in self._fields.items():
                     if isinstance(tag_info, (list, tuple)):
                         tag, convert = tag_info
                     else:
                         tag = tag_info
                         convert = to_unicode
-
+                    
                     if elem.tag.endswith('}' + tag):
-                        value = convert(elem.text.strip())
+                        value = convert(str(elem.text).strip())
                         setattr(self, field, value)
                     elif elem.tag.endswith('}ErrorReportDataResponse'):
                         error = self._get_error(elem)
-                        if not error in self.errors:
-                            self.errors.append(self._get_error(elem))
+                        self.errors = self._put_error(error, self.errors)
+                    elif elem.tag == 'faultstring':
+                        error = [0, elem.text]
+                        self.errors = self._put_error(error, self.errors)
 
+    def _put_error(self, error, errors):
+        if not error in errors:
+            errors.append(error)
+        return errors
 
     def _get_error(self, error_node):
         for node in error_node.iter():
@@ -128,7 +134,7 @@ class CreditCardResponse(PagadorResponse):
         self._fields['acquirer_transaction_id'] = 'AcquirerTransactionId'
         self._fields['authorization_code'] = 'AuthorizationCode'
 
-        self._fields['return_code'] = ('ReturnCode', int)
+        self._fields['return_code'] = 'ReturnCode'
         self._fields['return_message'] = 'ReturnMessage'
 
         self._fields['status'] = ('Status', int)

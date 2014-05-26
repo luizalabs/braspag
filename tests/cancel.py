@@ -35,6 +35,7 @@ class CancelTestCase(object):
 
     def test_acquirer_transaction_id(self):
         assert self.response.acquirer_transaction_id == '2cf84e51-c45b-45d9-9f64-554a6e088668'
+    
     def test_amount(self):
         assert self.response.amount == Decimal('1234.96')
 
@@ -42,7 +43,7 @@ class CancelTestCase(object):
         assert self.response.authorization_code == '20121127023809171'
 
     def test_return_code(self):
-        assert self.response.return_code == 0
+        assert self.response.return_code == '0'
 
     def test_return_message(self):
         assert self.response.return_message == 'Operation Successful'

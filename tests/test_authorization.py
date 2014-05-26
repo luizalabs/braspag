@@ -84,7 +84,7 @@ class AuthorizeTest(BraspagTestCase):
         assert self.response.payment_method == 997
 
     def test_return_code(self):
-        assert self.response.return_code == 4
+        assert self.response.return_code == '4'
 
     def test_return_message(self):
         assert self.response.return_message == u'Operation Successful'

@@ -44,7 +44,7 @@ class CaptureTest(BraspagTestCase):
         assert self.response.authorization_code == '20121127023809171'
 
     def test_return_code(self):
-        assert self.response.return_code == 6
+        assert self.response.return_code == '6'
 
     def test_return_message(self):
         assert self.response.return_message == 'Operation Successful'
