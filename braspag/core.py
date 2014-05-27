@@ -304,8 +304,8 @@ class BraspagTransaction(object):
             )
             assert all(kwargs.has_key(key) for key in card_keys), \
                 (u'Transações com Cartão de Crédito exigem os '
-                u'parametros: {0}'.format(' ,'.join(card_keys)))
-
+                 u'parametros: {0}'.format(', '.join(card_keys)))
+        
         if not kwargs.get('number_of_payments'):
             kwargs['number_of_payments'] = 1
 
