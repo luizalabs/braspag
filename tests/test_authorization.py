@@ -128,15 +128,7 @@ class AuthorizeTest(BraspagTestCase):
         assert auth_response.errors[0] == (122, 'Invalid MerchantId')
         assert auth_response.errors[1] == (134, 'Invalid Email Address')
 
-    def test_error_validation_cc(self):
-        self.data_dict['transactions'][0].update({
-            'currency': 'BRL',
-            'payment_plan': 0,
-            'number_of_payments': 1,
-            'country': 'BRA',
-            'transaction_type': 2,
-            'save_card': 'true',
-        })
+    def test_error_validation_without_card_holder(self):
         del self.data_dict['transactions'][0]['card_holder']
         with self.assertRaises(AssertionError) as cm:
             response = self.braspag.authorize(**self.data_dict)
@@ -144,4 +136,13 @@ class AuthorizeTest(BraspagTestCase):
             cm.exception.message,
             u'Transa\xe7\xf5es com Cart\xe3o de Cr\xe9dito exigem os parametros: '
             u'card_holder, card_security_code, card_exp_date, card_number'
+        )
+
+    def test_error_validation_without_card_number(self):
+        del self.data_dict['transactions'][0]['card_number']
+        with self.assertRaises(AssertionError) as cm:
+            response = self.braspag.authorize(**self.data_dict)
+        self.assertEqual(
+            cm.exception.message,
+            u'card_number ou card_token devem ser fornecidos'
         )
