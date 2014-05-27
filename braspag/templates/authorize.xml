@@ -1,83 +1,125 @@
 {% extends 'base.xml' %}
 {% block body_content %}
-    <AuthorizeTransaction xmlns="https://www.pagador.com.br/webservice/pagador">
-      <request>
+  <AuthorizeTransaction xmlns="https://www.pagador.com.br/webservice/pagador">
+    <request>
 
-        <RequestId>{{ request_id }}</RequestId>
-        <Version>1.0</Version>
+      <RequestId>{{ request_id }}</RequestId>
+      <Version>1.0</Version>
 
-        <OrderData>
-          <MerchantId>{{ merchant_id }}</MerchantId>
-          <OrderId>{{ order_id }}</OrderId>
-          {% if braspag_orderid %}
-            <BraspagOrderId>{{ braspag_orderid }}</BraspagOrderId>
-          {% else %}
-            <BraspagOrderId xsi:nil="true" />
-          {% endif %}
-        </OrderData>
+      <OrderData>
+        <MerchantId>{{ merchant_id }}</MerchantId>
+        <OrderId>{{ order_id }}</OrderId>
+        {% if braspag_orderid %}
+          <BraspagOrderId>{{ braspag_orderid }}</BraspagOrderId>
+        {% else %}
+          <BraspagOrderId xsi:nil="true" />
+        {% endif %}
+      </OrderData>
 
-        <CustomerData>
-          <CustomerIdentity>{{ customer_id }}</CustomerIdentity>
-          <CustomerName>{{ customer_name }}</CustomerName>
-          <CustomerEmail>{{ customer_email }}</CustomerEmail>
-          {% if customer_address %}
-            <CustomerAddressData>
-                <Street>{{ customer_address.street }}</Street>
-                <Number>{{ customer_address.number }}</Number>
-                {% if customer_address.complement %}
-                  <Complement>{{ customer_address.complement }}</Complement>
-                {% else %}
-                  <Complement xsi:nil="true"/>
-                {% endif %}
-                <District>{{ customer_address.district }}</District>
-                <ZipCode>{{ customer_address.zipcode }}</ZipCode>
-            </CustomerAddressData>
-          {% else %}
-            <CustomerAddressData xsi:nil="true" />
-          {% endif %}
-          {% if delivery_address %}
-            <DeliveryAddressData>
-                <Street>{{ delivery_address.street }}</Street>
-                <Number>{{ delivery_address.number }} </Number>
-                {% if delivery_address.complement %}
-                  <Complement>{{ delivery_address.complement }}</Complement>
-                {% else %}
-                  <Complement xsi:nil="true"/>
-                {% endif %}
-                <District>{{ delivery_address.district }}</District>
-                <ZipCode>{{ delivery_address.zipcode }}</ZipCode>
-            </DeliveryAddressData>
-          {% else %}
-            <DeliveryAddressData xsi:nil="true" />
-          {% endif %}
-        </CustomerData>
+      <CustomerData>
+        <CustomerIdentity>{{ customer_id }}</CustomerIdentity>
+        <CustomerName>{{ customer_name }}</CustomerName>
+        <CustomerEmail>{{ customer_email }}</CustomerEmail>
+        {% if customer_address %}
+          <CustomerAddressData>
+              <Street>{{ customer_address.street }}</Street>
+              <Number>{{ customer_address.number }}</Number>
+              {% if customer_address.complement %}
+                <Complement>{{ customer_address.complement }}</Complement>
+              {% else %}
+                <Complement xsi:nil="true"/>
+              {% endif %}
+              <District>{{ customer_address.district }}</District>
+              <ZipCode>{{ customer_address.zipcode }}</ZipCode>
+          </CustomerAddressData>
+        {% else %}
+          <CustomerAddressData xsi:nil="true" />
+        {% endif %}
+        {% if delivery_address %}
+          <DeliveryAddressData>
+              <Street>{{ delivery_address.street }}</Street>
+              <Number>{{ delivery_address.number }} </Number>
+              {% if delivery_address.complement %}
+                <Complement>{{ delivery_address.complement }}</Complement>
+              {% else %}
+                <Complement xsi:nil="true"/>
+              {% endif %}
+              <District>{{ delivery_address.district }}</District>
+              <ZipCode>{{ delivery_address.zipcode }}</ZipCode>
+          </DeliveryAddressData>
+        {% else %}
+          <DeliveryAddressData xsi:nil="true" />
+        {% endif %}
+      </CustomerData>
 
-        <PaymentDataCollection>
+      <PaymentDataCollection>
         {% if is_billet %}
           <PaymentDataRequest xsi:type="BoletoDataRequest">
-        {% else %}
-          <PaymentDataRequest xsi:type="CreditCardDataRequest">
-        {% endif %}
-
             <PaymentMethod>{{ payment_method }}</PaymentMethod>
             <Amount>{{ amount }}</Amount>
             <Currency>{{ currency }}</Currency>
             <Country>{{ country }}</Country>
+            {% if boleto_number %}
+              <BoletoNumber>{{ boleto_number }}</BoletoNumber>
+            {% endif %}
+            {% if boleto_instructions %}
+              <BoletoInstructions>{{ boleto_instructions }}</BoletoInstructions>
+            {% endif %}
 
-            {% block payment_data %}{% endblock %}
+            {% if boleto_expiration_date %}
+                <BoletoExpirationDate>{{ boleto_expiration_date }}</BoletoExpirationDate>
+            {% endif %}
 
-          {% if soft_descriptor %}
-            <AdditionalDataCollection>
-              <AdditionalDataRequest>
-                <Name>SoftDescriptor</Name>
-                <Value>{{ soft_descriptor }}</Value>
-              </AdditionalDataRequest>
-            </AdditionalDataCollection>
-          {% else %}
-            <AdditionalDataCollection xsi:nil="true" />
-          {% endif %}
+            {% if soft_descriptor %}
+              <AdditionalDataCollection>
+                <AdditionalDataRequest>
+                  <Name>SoftDescriptor</Name>
+                  <Value>{{ soft_descriptor }}</Value>
+                </AdditionalDataRequest>
+              </AdditionalDataCollection>
+            {% else %}
+              <AdditionalDataCollection xsi:nil="true" />
+            {% endif %}
           </PaymentDataRequest>
-        </PaymentDataCollection>
-      </request>
-    </AuthorizeTransaction>
+        {% else %}
+          {% for transaction in transactions %}
+            <PaymentDataRequest xsi:type="CreditCardDataRequest">
+              <PaymentMethod>{{ transaction.payment_method }}</PaymentMethod>
+              <Amount>{{ transaction.amount }}</Amount>
+              <Currency>{{ transaction.currency }}</Currency>
+              <Country>{{ transaction.country }}</Country>
+
+              <NumberOfPayments>{{ transaction.number_of_payments }}</NumberOfPayments>
+              <PaymentPlan>{{ transaction.payment_plan }}</PaymentPlan>
+              <TransactionType>{{ transaction.transaction_type }}</TransactionType>
+              {% if transaction.card_number %}
+                <CardHolder>{{ transaction.card_holder }}</CardHolder>
+                <CardNumber>{{ transaction.card_number }}</CardNumber>
+                <CardSecurityCode>{{ transaction.card_security_code }}</CardSecurityCode>
+                <CardExpirationDate>{{ transaction.card_exp_date }}</CardExpirationDate>
+                {% if transaction.save_card %}
+                  <SaveCreditCard>{{ transaction.save_card }}</SaveCreditCard>
+                {% endif %}
+              {% endif %}
+
+              {% if transaction.card_token %}
+                <CreditCardToken>{{ transaction.card_token }}</CreditCardToken>
+              {% endif %}
+
+              {% if transaction.soft_descriptor %}
+                <AdditionalDataCollection>
+                  <AdditionalDataRequest>
+                    <Name>SoftDescriptor</Name>
+                    <Value>{{ transaction.soft_descriptor }}</Value>
+                  </AdditionalDataRequest>
+                </AdditionalDataCollection>
+              {% else %}
+                <AdditionalDataCollection xsi:nil="true" />
+              {% endif %}
+            </PaymentDataRequest>
+          {% endfor %}
+        {% endif %}
+      </PaymentDataCollection>
+    </request>
+  </AuthorizeTransaction>
 {% endblock %}

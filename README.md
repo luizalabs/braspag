@@ -1,6 +1,6 @@
 # Braspag
 
-[![Build Status](https://secure.travis-ci.org/TracyWebTech/braspag.png?branch=master)](https://travis-ci.org/TracyWebTech/braspag)
+[![Build Status](https://secure.travis-ci.org/luizalabs/braspag.png?branch=master)](https://travis-ci.org/luizalabs/braspag)
 
 ## Getting Started
 

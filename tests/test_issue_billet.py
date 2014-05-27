@@ -39,6 +39,7 @@ class IssueBilletTest(BraspagTestCase):
                 ('country', 'BRA'),
                 ('currency', 'BRL'),
                 ('is_billet', True),
+                ('soft_descriptor', '')
             ])
         )
 
