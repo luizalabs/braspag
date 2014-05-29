@@ -18,6 +18,7 @@ class IssueBilletTest(BraspagTestCase):
 
         self.data_dict = {
             'transaction_id': u'140c74cf-099a-4cd4-9545-feb0260cecc1',
+            'request_id': ''
         }
 
         with open('tests/data/get_billet_data_response.xml') as response:

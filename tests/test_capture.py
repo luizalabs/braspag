@@ -19,6 +19,7 @@ class CaptureTest(BraspagTestCase):
         self.data_dict = {
             'transaction_id': '782b632a-2dae-11e2-b3ee-080027d29772',
             'amount': '10000',
+            'request_id': None
         }
 
         with open('tests/data/capture_response.xml') as response:
