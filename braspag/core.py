@@ -85,25 +85,26 @@ class BraspagRequest(object):
         response = self._request(spaceless(xml_request))
         return CreditCardAuthorizationResponse(response)
 
-    def _base_transaction(self, transaction_id, amount, type=None):
-        assert type in ('Refund', 'Void', 'Capture')
-        assert is_valid_guid(transaction_id), 'Transaction ID invalido'
+    def _base_transaction(self, **kwargs):
+        assert kwargs.get('type') in ('Refund', 'Void', 'Capture')
+        assert is_valid_guid(kwargs.get('transaction_id')), 'Transaction ID invalido'
 
         data_dict = {
-            'amount': amount,
-            'type': type,
-            'transaction_id': transaction_id,
+            'amount': kwargs.get('amount'),
+            'type': kwargs.get('type'),
+            'transaction_id': kwargs.get('transaction_id'),
+            'request_id': kwargs.get('request_id'),
         }
         xml_request = self._render_template('base.xml', data_dict)
         xml_response = self._request(xml_request)
 
-        if type in ('Void', 'Refund'):
+        if kwargs.get('type') in ('Void', 'Refund'):
             return CreditCardCancelResponse(xml_response)
         else:
             return CreditCardAuthorizationResponse(xml_response)
 
 
-    def void(self, transaction_id, amount=0):
+    def void(self, **kwargs):
         """Void the given amount for the given transaction_id.
 
         This method should be used to return funds to customers
@@ -117,9 +118,11 @@ class BraspagRequest(object):
         :returns: :class:`~braspag.BraspagResponse`
 
         """
-        return self._base_transaction(transaction_id, amount, 'Void')
+        kwargs['type'] = 'Void'
+        kwargs['amount'] = kwargs.get('amount', 0)
+        return self._base_transaction(**kwargs)
 
-    def refund(self, transaction_id, amount=0):
+    def refund(self, **kwargs):
         """Refund the given amount for the given transaction_id.
 
         This method should be used to return funds to customers
@@ -133,9 +136,11 @@ class BraspagRequest(object):
         :returns: :class:`~braspag.BraspagResponse`
 
         """
-        return self._base_transaction(transaction_id, amount, 'Refund')
+        kwargs['type'] = 'Refund'
+        kwargs['amount'] = kwargs.get('amount', 0)
+        return self._base_transaction(**kwargs)
 
-    def capture(self, transaction_id, amount=0):
+    def capture(self, **kwargs):
         """Capture the given `amount` from the given transaction_id.
 
         This method should only be called after pre-authorizing the
@@ -145,13 +150,14 @@ class BraspagRequest(object):
         :returns: :class:`~braspag.BraspagResponse`
 
         """
-        return self._base_transaction(transaction_id, amount, 'Capture')
+        kwargs['type'] = 'Capture'
+        return self._base_transaction(**kwargs)
 
     def _render_template(self, template_name, data_dict):
         if self.merchant_id:
             data_dict['merchant_id'] = self.merchant_id
 
-        if not data_dict.has_key('request_id'):
+        if not data_dict.get('request_id'):
             data_dict['request_id'] = unicode(uuid.uuid4())
 
         template = self.jinja_env.get_template(template_name)
@@ -199,7 +205,7 @@ class BraspagRequest(object):
         xml_request = self._render_template('authorize_billet.xml', kwargs)
         return BilletResponse(self._request(spaceless(xml_request)))
 
-    def get_billet_data(self, transaction_id):
+    def get_billet_data(self, **kwargs):
         """All arguments supplied to this method must be keyword arguments.
 
         :arg transaction_id: The id of the transaction generated previously by
@@ -208,14 +214,17 @@ class BraspagRequest(object):
         :returns: :class:`~braspag.BilletResponse`
 
         """
-        assert is_valid_guid(transaction_id), 'Invalid Transaction ID'
+        assert is_valid_guid(kwargs.get('transaction_id')), 'Invalid Transaction ID'
 
-        context = {'transaction_id': transaction_id}
+        context = {
+            'transaction_id': kwargs.get('transaction_id'),
+            'request_id': kwargs.get('request_id')
+        }
         xml_request = self._render_template('get_billet_data.xml', context)
         xml_response = self._request(spaceless(xml_request), query=True)
         return BilletDataResponse(xml_response)
 
-    def get_braspag_order_id(self, transaction_id):
+    def get_order_id_by_transaction_id(self, **kwargs):
         """All arguments supplied to this method must be keyword arguments.
 
         :arg transaction_id: The id of the transaction generated previously by
@@ -224,14 +233,18 @@ class BraspagRequest(object):
         :returns: :class:`~braspag.BraspagOrderIdResponse`
 
         """
-        assert is_valid_guid(transaction_id), 'Invalid Transaction ID'
-
-        context = {'transaction_id': transaction_id}
+        assert is_valid_guid(kwargs.get('transaction_id')), 'Invalid Transaction ID'
+        
+        context = {
+            'transaction_id': kwargs.get('transaction_id'),
+            'request_id': kwargs.get('request_id')
+        }
+        
         xml_request = self._render_template('get_braspag_order_id.xml', context)
         xml_response = self._request(spaceless(xml_request), query=True)
         return BraspagOrderIdResponse(xml_response)
 
-    def get_customer_data(self, order_id):
+    def get_customer_data(self, **kwargs):
         """All arguments supplied to this method must be keyword arguments.
 
         :arg order_id: The id of the order generated previously by *get_order_id*
@@ -240,14 +253,17 @@ class BraspagRequest(object):
         :returns: :class:`~braspag.CustomerDataResponse`
 
         """
-        assert is_valid_guid(order_id), 'Invalid Order ID'
+        assert is_valid_guid(kwargs.get('order_id')), 'Invalid Order ID'
 
-        context = {'order_id': order_id}
+        context = {
+            'order_id': kwargs.get('order_id'),
+            'request_id': kwargs.get('request_id')
+        }
         xml_request = self._render_template('get_customer_data.xml', context)
         xml_response = self._request(spaceless(xml_request), query=True)
         return CustomerDataResponse(xml_response)
 
-    def get_transaction_data(self, transaction_id):
+    def get_transaction_data(self, **kwargs):
         """All arguments supplied to this method must be keyword arguments.
 
         :arg transaction_id: The id of the transaction
@@ -255,9 +271,12 @@ class BraspagRequest(object):
         :returns: :class:`~braspag.TransactionDataResponse`
 
         """
-        assert is_valid_guid(transaction_id), 'Invalid Order ID'
+        assert is_valid_guid(kwargs.get('transaction_id')), 'Invalid Order ID'
 
-        context = {'transaction_id': transaction_id}
+        context = {
+            'transaction_id': kwargs.get('transaction_id'),
+            'request_id': kwargs.get('request_id')
+        }
         xml_request = self._render_template('get_transaction_data.xml', context)
         xml_response = self._request(spaceless(xml_request), query=True)
         return TransactionDataResponse(xml_response)

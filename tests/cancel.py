@@ -17,6 +17,7 @@ class CancelTestCase(object):
         self.data_dict = {
             'transaction_id': '0dfc078c-4c8b-454a-af0f-1f02023a4141',
             'amount': '123496',
+            'request_id': None
         }
 
         with open(self.xml_response_data) as response:
