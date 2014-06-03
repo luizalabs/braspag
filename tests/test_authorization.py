@@ -78,13 +78,13 @@ class AuthorizeTest(BraspagTestCase):
             self.braspag._request.assert_called_with(spaceless(xml.read()))
 
     def test_amount(self):
-        assert self.response.amount == Decimal('100.00')
+        assert self.response.transactions[0]['amount'] == Decimal('100.00')
 
     def test_auth_code(self):
-        assert self.response.authorization_code == u'20121127023808921'
+        assert self.response.transactions[0]['authorization_code'] == u'20121127023808921'
 
     def test_acquirer_transaction(self):
-        assert self.response.acquirer_transaction_id == u'1127023808906'
+        assert self.response.transactions[0]['acquirer_transaction_id'] == u'1127023808906'
 
     def test_brapag_order_id(self):
         assert self.response.braspag_order_id == u'893cd2c6-9a29-4009-bd5b-4cc8791ebb49'
@@ -96,37 +96,37 @@ class AuthorizeTest(BraspagTestCase):
         assert self.response.correlation_id == u'5b4515b3-eaa8-4d0c-983b-8e4aa0d4893f'
 
     def test_payment_method(self):
-        assert self.response.payment_method == 997
+        assert self.response.transactions[0]['payment_method'] == 997
 
     def test_return_code(self):
-        assert self.response.return_code == '4'
+        assert self.response.transactions[0]['return_code'] == '4'
 
     def test_return_message(self):
-        assert self.response.return_message == u'Operation Successful'
+        assert self.response.transactions[0]['return_message'] == u'Operation Successful'
 
     def test_status(self):
-        assert self.response.status == 1
+        assert self.response.transactions[0]['status'] == 1
 
     def test_status_message(self):
-        assert self.response.status_message == 'Authorized'
+        assert self.response.transactions[0]['status_message'] == 'Authorized'
 
     def test_success(self):
         assert self.response.success == True
 
     def test_transaction_id(self):
-        assert self.response.transaction_id == u'0dfc078c-4c8b-454a-af0f-1f02023a4141'
+        assert self.response.transactions[0]['braspag_transaction_id'] == u'0dfc078c-4c8b-454a-af0f-1f02023a4141'
 
     def test_card_token(self):
-        assert self.response.card_token == '08fc9329-2c7e-4f6a-9df4-96b483346305'
+        assert self.response.transactions[0]['card_token'] == '08fc9329-2c7e-4f6a-9df4-96b483346305'
 
     def test_errors(self):
         with open('tests/data/authorization_error_response.xml') as response:
             self.braspag._request.return_value = response.read()
-
+            
         auth_response = self.braspag.authorize(**self.data_dict) 
         assert len(auth_response.errors) == 2
-        assert auth_response.errors[0] == (122, 'Invalid MerchantId')
-        assert auth_response.errors[1] == (134, 'Invalid Email Address')
+        assert auth_response.errors[0] == {'error_message': u'Invalid MerchantId', 'error_code': u'122'}
+        assert auth_response.errors[1] == {'error_message': u'Invalid Email Address', 'error_code': u'134'}
 
     def test_error_validation_without_card_holder(self):
         del self.data_dict['transactions'][0]['card_holder']

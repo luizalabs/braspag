@@ -32,28 +32,28 @@ class CancelTestCase(object):
         assert self.response.success == True
 
     def test_transaction_id(self):
-        assert self.response.transaction_id == '0dfc078c-4c8b-454a-af0f-1f02023a4141'
+        assert self.response.transactions[0]['braspag_transaction_id'] == '0dfc078c-4c8b-454a-af0f-1f02023a4141'
 
     def test_acquirer_transaction_id(self):
-        assert self.response.acquirer_transaction_id == '2cf84e51-c45b-45d9-9f64-554a6e088668'
+        assert self.response.transactions[0]['acquirer_transaction_id'] == '2cf84e51-c45b-45d9-9f64-554a6e088668'
     
     def test_amount(self):
-        assert self.response.amount == Decimal('1234.96')
+        assert self.response.transactions[0]['amount'] == Decimal('1234.96')
 
     def test_authorization_code(self):
-        assert self.response.authorization_code == '20121127023809171'
+        assert self.response.transactions[0]['authorization_code'] == '20121127023809171'
 
     def test_return_code(self):
-        assert self.response.return_code == '0'
+        assert self.response.transactions[0]['return_code'] == '0'
 
     def test_return_message(self):
-        assert self.response.return_message == 'Operation Successful'
+        assert self.response.transactions[0]['return_message'] == 'Operation Successful'
 
     def test_status(self):
-        assert self.response.status == 0
+        assert self.response.transactions[0]['status'] == 0
 
     def test_status_message(self):
-        assert self.response.status_message == 'Void/Refund Confirmed'
+        assert self.response.transactions[0].get('status_message') == 'Void/Refund Confirmed'
 
     def test_render_template(self):
         self.braspag._render_template = MagicMock(name='_render_template')
