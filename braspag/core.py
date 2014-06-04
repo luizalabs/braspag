@@ -12,8 +12,8 @@ import jinja2
 from .utils import spaceless, is_valid_guid
 from .exceptions import BraspagHttpResponseException
 from .response import (CreditCardAuthorizationResponse, BilletResponse,
-    BilletDataResponse, CreditCardCancelResponse,
-    BraspagOrderIdResponse, CustomerDataResponse,
+    BilletDataResponse, CreditCardCancelResponse, CreditCardRefundResponse,
+    BraspagOrderIdResponse, CustomerDataResponse, CreditCardCaptureResponse,
     TransactionDataResponse)
 from xml.dom import minidom
 from xml.etree import ElementTree
@@ -98,10 +98,12 @@ class BraspagRequest(object):
         xml_request = self._render_template('base.xml', data_dict)
         xml_response = self._request(xml_request)
 
-        if kwargs.get('type') in ('Void', 'Refund'):
+        if kwargs.get('type') == 'Void':
             return CreditCardCancelResponse(xml_response)
+        elif kwargs.get('type') == 'Refund':
+            return CreditCardRefundResponse(xml_response)
         else:
-            return CreditCardAuthorizationResponse(xml_response)
+            return CreditCardCaptureResponse(xml_response)
 
 
     def void(self, **kwargs):

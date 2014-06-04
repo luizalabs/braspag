@@ -5,6 +5,7 @@ import xml.etree.ElementTree as ET
 from decimal import Decimal
 from datetime import datetime
 from xml.etree.ElementTree import Element
+import xmltodict
 
 
 def unescape(s):
@@ -66,6 +67,7 @@ def to_int(value):
     else:
         #some BoletoNumber came with - e.g: 10027-1
         return int(value.replace('-',''))
+ 
 
 class PagadorResponse(object):
 
@@ -120,56 +122,142 @@ class PagadorResponse(object):
         return int(code), msg
 
 
-class CreditCardResponse(PagadorResponse):
+class PagadorDictResponse(object):
 
     def __init__(self, xml):
+        dictxml = xmltodict.parse(xml)
+        self.body = dict
+        self.transactions = []
+        self.errors = []
 
-        self._fields = getattr(self, '_fields', {})
+        if dictxml['soap:Envelope']['soap:Body']:
+            self.body = dictxml['soap:Envelope']['soap:Body']
 
-        # auth fields
-        self._fields['order_id'] = 'OrderId'
-        self._fields['braspag_order_id'] = 'BraspagOrderId'
-        self._fields['payment_method'] = ('PaymentMethod', int)
+    def get_body_data(self, body):
+        self.correlation_id = body.get('CorrelationId')
+        self.success = to_bool(body.get('Success'))
 
-        self._fields['acquirer_transaction_id'] = 'AcquirerTransactionId'
-        self._fields['authorization_code'] = 'AuthorizationCode'
-
-        self._fields['return_code'] = 'ReturnCode'
-        self._fields['return_message'] = 'ReturnMessage'
-
-        self._fields['status'] = ('Status', int)
-
-        super(CreditCardResponse, self).__init__(xml)
-
-        status = getattr(self, 'status', None)
-        if self._STATUS and status is not None:
-            self.status_message = dict(self._STATUS)[status]
+    def format_transactions(self, transaction_items):
+        if isinstance(transaction_items, list):
+            [self.format_transactions(t) for t in transaction_items]
         else:
-            self.status_message = None
+            status = to_int(transaction_items.get('Status'))
+            data = {
+                'braspag_transaction_id': transaction_items.get('BraspagTransactionId'),
+                'acquirer_transaction_id': transaction_items.get('AcquirerTransactionId'),
+                'authorization_code': transaction_items.get('AuthorizationCode'),
+                'amount': to_decimal(transaction_items.get('Amount')),
+                'return_code': transaction_items.get('ReturnCode'),
+                'return_message': transaction_items.get('ReturnMessage') ,
+                'status': status,
+                'status_message': self.STATUS[status],
+            }
+
+            if transaction_items.has_key('PaymentMethod'):
+                data['payment_method'] = to_int(transaction_items.get('PaymentMethod'))
+            if transaction_items.has_key('CreditCardToken') and len(transaction_items.get('CreditCardToken')) == 2:
+                data['card_token'] = transaction_items.get('CreditCardToken')[1]
+            
+            self.transactions.append(data)
+
+    def format_errors(self, error_items):
+        if isinstance(error_items, list):
+            [self.format_errors(e) for e in error_items]
+        else:
+            self.errors.append({
+                'error_code': error_items.get('ErrorCode'),
+                'error_message': error_items.get('ErrorMessage')
+            })
 
 
-class CreditCardAuthorizationResponse(CreditCardResponse):
+class CreditCardAuthorizationResponse(PagadorDictResponse):
 
-    _STATUS = (
-        (0, 'Captured'),
-        (1, 'Authorized'),
-        (2, 'Not Authorized'),
-        (3, 'Disqualifying Error'),
-        (4, 'Waiting for Answer'),
-    )
+    STATUS = {
+        0: 'Captured',
+        1: 'Authorized',
+        2: 'Not Authorized',
+        3: 'Disqualifying Error',
+        4: 'Waiting for Answer',
+    }
 
     def __init__(self, xml):
-        self._fields = getattr(self, '_fields', {})
-        self._fields['card_token'] = 'CreditCardToken'
         super(CreditCardAuthorizationResponse, self).__init__(xml)
+        body = self.body.get('AuthorizeTransactionResponse').get('AuthorizeTransactionResult')
+        self.get_body_data(body)
+
+        if self.success:
+            self.braspag_order_id = body.get('OrderData').get('BraspagOrderId')
+            self.order_id = body.get('OrderData').get('OrderId')
+            
+            transactions = body.get('PaymentDataCollection').get('PaymentDataResponse')
+            self.format_transactions(transactions)
+        else:
+            error_items = body.get('ErrorReportDataCollection').get('ErrorReportDataResponse')
+            self.format_errors(error_items)
 
 
-class CreditCardCancelResponse(CreditCardResponse):
-    _STATUS = (
-        (0, 'Void/Refund Confirmed'),
-        (1, 'Void/Refund Denied'),
-        (2, 'Invalid Transaction'),
-    )
+class CreditCardCaptureResponse(PagadorDictResponse):
+
+    STATUS = {
+        0: 'Captured',
+        1: 'Authorized',
+        2: 'Not Authorized',
+        3: 'Disqualifying Error',
+        4: 'Waiting for Answer',
+    }
+
+    def __init__(self, xml):
+        super(CreditCardCaptureResponse, self).__init__(xml)
+        body = self.body.get('CaptureCreditCardTransactionResponse').get('CaptureCreditCardTransactionResult')
+        self.get_body_data(body)
+
+        if self.success:
+            transactions = body.get('TransactionDataCollection').get('TransactionDataResponse')
+            self.format_transactions(transactions)
+        else:
+            error_items = body.get('ErrorReportDataCollection').get('ErrorReportDataResponse')
+            self.format_errors(error_items)
+
+
+class CreditCardCancelResponse(PagadorDictResponse):
+
+    STATUS = {
+        0: 'Void/Refund Confirmed',
+        1: 'Void/Refund Denied',
+        2: 'Invalid Transaction',
+    }
+
+    def __init__(self, xml):
+        super(CreditCardCancelResponse, self).__init__(xml)
+        body = self.body.get('VoidCreditCardTransactionResponse').get('VoidCreditCardTransactionResult')
+        self.get_body_data(body)
+
+        if self.success:
+            transactions = body.get('TransactionDataCollection').get('TransactionDataResponse')
+            self.format_transactions(transactions)
+        else:
+            error_items = body.get('ErrorReportDataCollection').get('ErrorReportDataResponse')
+            self.format_errors(error_items)
+
+
+class CreditCardRefundResponse(PagadorDictResponse):
+
+    STATUS = {
+        0: 'Void/Refund Confirmed',
+        1: 'Void/Refund Denied',
+        2: 'Invalid Transaction',
+    }
+
+    def __init__(self, xml):
+        super(CreditCardRefundResponse, self).__init__(xml)
+        body = self.body.get('RefundCreditCardTransactionResponse').get('RefundCreditCardTransactionResult')
+        self.get_body_data(body)
+        if self.success:
+            transactions = body.get('TransactionDataCollection').get('TransactionDataResponse')
+            self.format_transactions(transactions)
+        else:
+            error_items = body.get('ErrorReportDataCollection').get('ErrorReportDataResponse')
+            self.format_errors(error_items)
 
 
 class BilletResponse(PagadorResponse):

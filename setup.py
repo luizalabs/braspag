@@ -23,7 +23,7 @@ setup(
         'braspag': ['templates/*.xml'],
     },
     test_suite='tests.suite',
-    install_requires=['Jinja2'],
+    install_requires=['Jinja2', 'xmltodict'],
     tests_require=['Mock'],
     zip_safe=False,
 )
