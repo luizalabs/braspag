@@ -9,6 +9,7 @@
 The following dependencies are automaticatly installed by the setup.py:
 
 * Jinja2
+* xmltodict
 
 ### Installation
 

@@ -3,7 +3,6 @@
 
 import os
 from setuptools import setup
-from braspag.version import __version__
 
 
 cwd = os.path.abspath(os.path.dirname(__file__))
@@ -12,7 +11,7 @@ readme = open(os.path.join(cwd, 'README.md')).read()
 
 setup(
     name='braspag',
-    version=__version__,
+    version='0.4.2',
     description = "Python library to consume Braspag SOAP Web services",
     long_description = readme,
     author='Sergio Oliveira',
