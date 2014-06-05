@@ -19,6 +19,10 @@ from xml.dom import minidom
 from xml.etree import ElementTree
 from decimal import Decimal, InvalidOperation
 
+from tornado.httpclient import HTTPRequest
+from tornado import ioloop
+from tornado import httpclient
+
 
 class BraspagRequest(object):
     """
@@ -40,7 +44,13 @@ class BraspagRequest(object):
 
         self.log = logging.getLogger('braspag')
 
-    def _request(self, xml, query=False):
+        # user callbacks
+        self.user_authorize_callback = None
+        self.user_capture_callback = None
+        self.user_void_callback = None
+        self.user_refund_callback = None
+
+    def _request(self, callback, xml, query=False):
         if query:
             uri = '/services/pagadorQuery.asmx'
         else:
@@ -49,19 +59,36 @@ class BraspagRequest(object):
         if isinstance(xml, unicode):
             xml = xml.encode('utf-8')
 
-        http = httplib.HTTPSConnection(self.url)
-        http.request("POST", uri, body=xml, headers={
-            "Host": "localhost",
-            "Content-Type": "text/xml; charset=UTF-8",
-        })
-        response = http.getresponse()
-        xmlresponse = response.read()
-        self.log.debug(minidom.parseString(xmlresponse).toprettyxml(indent='  '))
-        return xmlresponse
+        url = 'https://%s/%s' % (self.url, uri)
 
-    def authorize(self, **kwargs):
+        request = HTTPRequest(url=url, method='POST', body=xml,
+                              headers={
+                                  "Host": "localhost",
+                                  "Content-Type": "text/xml; charset=UTF-8",
+                              })
+
+        http_client = httpclient.AsyncHTTPClient()
+        http_client.fetch(request, callback)
+
+    def _authorize_callback(self, response):
+        """Callback that's called when we get a response from braspag.
+        Once called, we wrap the response in the needed response class,
+        in our case CreditCardAuthorizationResponse() and call the
+        user callback with it as an argument.
+        """
+        xmlresponse = response.body
+        #logging.info('self: ---%s---' % self)
+        #logging.info('response: ---%s---' % response)
+        logging.info('response.body: ---%s---' % response.body)
+        #self.log.debug(minidom.parseString(xmlresponse).toprettyxml(indent='  '))
+
+        self.user_authorize_callback(CreditCardAuthorizationResponse(xmlresponse))
+
+    def authorize(self, user_callback, **kwargs):
         """All arguments supplied to this method must be keyword arguments.
 
+        :arg user_callback: callback to be called when we get a response from
+                            braspag.
         :arg order_id: Order id. It will be used to indentify the
                        order later in Braspag.
         :arg customer_id: Must be user's CPF/CNPJ.
@@ -82,10 +109,10 @@ class BraspagRequest(object):
             'customer_email': kwargs['customer_email'],
             'transactions': transactions,
         })
-        response = self._request(spaceless(xml_request))
-        return CreditCardAuthorizationResponse(response)
+        self.user_authorize_callback = user_callback
+        self._request(self._authorize_callback, spaceless(xml_request))
 
-    def _base_transaction(self, **kwargs):
+    def _base_transaction(self, user_callback, **kwargs):
         assert kwargs.get('type') in ('Refund', 'Void', 'Capture')
         assert is_valid_guid(kwargs.get('transaction_id')), 'Transaction ID invalido'
 
@@ -96,6 +123,7 @@ class BraspagRequest(object):
             'request_id': kwargs.get('request_id'),
         }
         xml_request = self._render_template('base.xml', data_dict)
+
         xml_response = self._request(xml_request)
 
         if kwargs.get('type') == 'Void':
@@ -142,7 +170,22 @@ class BraspagRequest(object):
         kwargs['amount'] = kwargs.get('amount', 0)
         return self._base_transaction(**kwargs)
 
-    def capture(self, **kwargs):
+    def _capture_callback(self, response):
+        xmlresponse = response.body
+        logging.info('-- capture response.body: ---%s---' % response.body)
+
+        data_dict = {
+            'amount': kwargs.get('amount'),
+            'type': kwargs.get('type'),
+            'transaction_id': kwargs.get('transaction_id'),
+            'request_id': kwargs.get('request_id'),
+        }
+        xml_request = self._render_template('base.xml', data_dict)
+        xml_response = self._request(xml_request)
+
+        self.user_capture_callback(CreditCardCaptureResponse(xmlresponse)
+
+    def capture(self, user_callback, **kwargs):
         """Capture the given `amount` from the given transaction_id.
 
         This method should only be called after pre-authorizing the
@@ -153,7 +196,8 @@ class BraspagRequest(object):
 
         """
         kwargs['type'] = 'Capture'
-        return self._base_transaction(**kwargs)
+        self._base_transaction(user_callback, **kwargs)
+        #return self._base_transaction(**kwargs)
 
     def _render_template(self, template_name, data_dict):
         if self.merchant_id:
@@ -236,12 +280,12 @@ class BraspagRequest(object):
 
         """
         assert is_valid_guid(kwargs.get('transaction_id')), 'Invalid Transaction ID'
-        
+
         context = {
             'transaction_id': kwargs.get('transaction_id'),
             'request_id': kwargs.get('request_id')
         }
-        
+
         xml_request = self._render_template('get_braspag_order_id.xml', context)
         xml_response = self._request(spaceless(xml_request), query=True)
         return BraspagOrderIdResponse(xml_response)
@@ -347,7 +391,7 @@ class BraspagTransaction(object):
             assert all(kwargs.has_key(key) for key in card_keys), \
                 (u'Transações com Cartão de Crédito exigem os '
                  u'parametros: {0}'.format(', '.join(card_keys)))
-        
+
         if not kwargs.get('number_of_payments'):
             kwargs['number_of_payments'] = 1
 
