@@ -155,8 +155,8 @@ class PagadorDictResponse(object):
 
             if transaction_items.has_key('PaymentMethod'):
                 data['payment_method'] = to_int(transaction_items.get('PaymentMethod'))
-            if transaction_items.has_key('CreditCardToken') and len(transaction_items.get('CreditCardToken')) == 2:
-                data['card_token'] = transaction_items.get('CreditCardToken')[1]
+            if transaction_items.has_key('CreditCardToken'):
+                data['card_token'] = transaction_items.get('CreditCardToken')
             
             self.transactions.append(data)
 
