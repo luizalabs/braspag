@@ -3,9 +3,10 @@
 from __future__ import absolute_import
 
 import uuid
-import httplib
+#import httplib
 import logging
 import unicodedata
+import urlparse
 
 import jinja2
 
@@ -31,9 +32,9 @@ class BraspagRequest(object):
 
     def __init__(self, merchant_id=None, homologation=False):
         if homologation:
-            self.url = 'homologacao.pagador.com.br'
+            self.url = 'https://homologacao.pagador.com.br'
         else:
-            self.url = 'www.pagador.com.br'
+            self.url = 'https://www.pagador.com.br'
 
         self.merchant_id = merchant_id
 
@@ -43,6 +44,7 @@ class BraspagRequest(object):
         )
 
         self.log = logging.getLogger('braspag')
+        self.http_client = httpclient.AsyncHTTPClient()
 
         # user callbacks
         self.user_authorize_callback = None
@@ -50,25 +52,24 @@ class BraspagRequest(object):
         self.user_void_callback = None
         self.user_refund_callback = None
 
+        # services
+        self.query_service = '/services/pagadorQuery.asmx'
+        self.transaction_service = '/webservice/pagadorTransaction.asmx'
+
+    @property
+    def headers(self):
+        return { "Content-Type": "text/xml; charset=UTF-8" }
+
+    def _get_url(self, service):
+        return urlparse.urljoin(self.url, service)
+
+    def _get_request(self, url, body, headers=None):
+        return HTTPRequest(url=url, method='POST',
+                           body=body, headers=headers and headers or self.headers)
+
     def _request(self, callback, xml, query=False):
-        if query:
-            uri = '/services/pagadorQuery.asmx'
-        else:
-            uri = '/webservice/pagadorTransaction.asmx'
-
-        if isinstance(xml, unicode):
-            xml = xml.encode('utf-8')
-
-        url = 'https://%s/%s' % (self.url, uri)
-
-        request = HTTPRequest(url=url, method='POST', body=xml,
-                              headers={
-                                  "Host": "localhost",
-                                  "Content-Type": "text/xml; charset=UTF-8",
-                              })
-
-        http_client = httpclient.AsyncHTTPClient()
-        http_client.fetch(request, callback)
+        url = self._get_url(query and self.query_service or self.transaction_service)
+        self.http_client.fetch(self._get_request(url, xml), callback)
 
     def _authorize_callback(self, response):
         """Callback that's called when we get a response from braspag.
@@ -76,13 +77,8 @@ class BraspagRequest(object):
         in our case CreditCardAuthorizationResponse() and call the
         user callback with it as an argument.
         """
-        xmlresponse = response.body
-        #logging.info('self: ---%s---' % self)
-        #logging.info('response: ---%s---' % response)
-        logging.info('response.body: ---%s---' % response.body)
-        #self.log.debug(minidom.parseString(xmlresponse).toprettyxml(indent='  '))
-
-        self.user_authorize_callback(CreditCardAuthorizationResponse(xmlresponse))
+        #logging.debug('response.body: ---%s---' % response.body)
+        self.user_authorize_callback(CreditCardAuthorizationResponse(response.body))
 
     def authorize(self, user_callback, **kwargs):
         """All arguments supplied to this method must be keyword arguments.
@@ -123,7 +119,6 @@ class BraspagRequest(object):
             'request_id': kwargs.get('request_id'),
         }
         xml_request = self._render_template('base.xml', data_dict)
-
         xml_response = self._request(xml_request)
 
         if kwargs.get('type') == 'Void':
@@ -183,7 +178,11 @@ class BraspagRequest(object):
         xml_request = self._render_template('base.xml', data_dict)
         xml_response = self._request(xml_request)
 
-        self.user_capture_callback(CreditCardCaptureResponse(xmlresponse)
+        self.user_capture_callback(CreditCardCaptureResponse(xmlresponse))
+
+    def _capture_callback(self, response):
+        logging.info('-- response: %s' % response.body)
+        self.user_capture_callback(CreditCardCaptureResponse(response.body))
 
     def capture(self, user_callback, **kwargs):
         """Capture the given `amount` from the given transaction_id.
@@ -195,20 +194,26 @@ class BraspagRequest(object):
         :returns: :class:`~braspag.BraspagResponse`
 
         """
-        kwargs['type'] = 'Capture'
-        self._base_transaction(user_callback, **kwargs)
-        #return self._base_transaction(**kwargs)
+        assert is_valid_guid(kwargs.get('transaction_id')), 'Transaction ID invalido'
+
+        data_dict = {
+            'amount': kwargs.get('amount'),
+            'type': kwargs.get('type'),
+            'transaction_id': kwargs.get('transaction_id'),
+            'request_id': kwargs.get('request_id'),
+        }
+        xml_request = self._render_template('base.xml', data_dict)
+        self._request(self._capture_callback, spaceless(xml_request))
 
     def _render_template(self, template_name, data_dict):
-        if self.merchant_id:
-            data_dict['merchant_id'] = self.merchant_id
+        data_dict['merchant_id'] = self.merchant_id
 
         if not data_dict.get('request_id'):
             data_dict['request_id'] = unicode(uuid.uuid4())
 
         template = self.jinja_env.get_template(template_name)
         xml_request = template.render(data_dict)
-        self.log.debug(xml_request)
+        #self.log.debug(xml_request)
         return xml_request
 
     def issue_billet(self, **kwargs):
