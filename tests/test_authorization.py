@@ -119,6 +119,9 @@ class AuthorizeTest(BraspagTestCase):
     def test_card_token(self):
         assert self.response.transactions[0]['card_token'] == '08fc9329-2c7e-4f6a-9df4-96b483346305'
 
+    def test_card_token(self):
+        assert self.response.transactions[0]['proof_of_sale'] == '2307824'
+
     def test_errors(self):
         with open('tests/data/authorization_error_response.xml') as response:
             self.braspag._request.return_value = response.read()

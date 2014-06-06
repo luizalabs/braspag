@@ -151,6 +151,7 @@ class PagadorDictResponse(object):
                 'return_message': transaction_items.get('ReturnMessage') ,
                 'status': status,
                 'status_message': self.STATUS[status],
+                'proof_of_sale': transaction_items.get('ProofOfSale'),
             }
 
             if transaction_items.has_key('PaymentMethod'):

@@ -47,6 +47,9 @@
             <CreditCardToken>
               08fc9329-2c7e-4f6a-9df4-96b483346305
             </CreditCardToken>
+            <ProofOfSale>
+              2307824
+            </ProofOfSale>
           </PaymentDataResponse>
         </PaymentDataCollection>
       </AuthorizeTransactionResult>
