@@ -147,18 +147,38 @@ class PagadorDictResponse(object):
                 'acquirer_transaction_id': transaction_items.get('AcquirerTransactionId'),
                 'authorization_code': transaction_items.get('AuthorizationCode'),
                 'amount': to_decimal(transaction_items.get('Amount')),
-                'return_code': transaction_items.get('ReturnCode'),
-                'return_message': transaction_items.get('ReturnMessage') ,
                 'status': status,
                 'status_message': self.STATUS[status],
                 'proof_of_sale': transaction_items.get('ProofOfSale'),
             }
 
+            if transaction_items.has_key('ReturnCode'):
+                data['return_code'] = transaction_items.get('ReturnCode')
+
+            if transaction_items.has_key('ReturnMessage'):
+                data['return_message'] = transaction_items.get('ReturnMessage')
+
             if transaction_items.has_key('PaymentMethod'):
                 data['payment_method'] = to_int(transaction_items.get('PaymentMethod'))
+
             if transaction_items.has_key('CreditCardToken'):
                 data['card_token'] = transaction_items.get('CreditCardToken')
-            
+
+            if transaction_items.has_key('PaymentMethodName'):
+                data['payment_method_name'] = transaction_items.get('PaymentMethodName')
+
+            if transaction_items.has_key('TransactionType'):
+                data['transaction_type'] = to_int(transaction_items.get('TransactionType'))
+
+            if transaction_items.has_key('ReceivedDate'):
+                data['received_date'] = to_date(transaction_items.get('ReceivedDate'))
+
+            if transaction_items.has_key('CapturedDate'):
+                data['captured_date'] = to_date(transaction_items.get('CapturedDate'))
+
+            if transaction_items.has_key('OrderId'):
+                data['order_id'] = transaction_items.get('OrderId')
+
             self.transactions.append(data)
 
     def format_errors(self, error_items):
@@ -255,6 +275,28 @@ class CreditCardRefundResponse(PagadorDictResponse):
         self.get_body_data(body)
         if self.success:
             transactions = body.get('TransactionDataCollection').get('TransactionDataResponse')
+            self.format_transactions(transactions)
+        else:
+            error_items = body.get('ErrorReportDataCollection').get('ErrorReportDataResponse')
+            self.format_errors(error_items)
+
+
+class BraspagOrderDataResponse(PagadorDictResponse):
+    
+    STATUS = {
+        0: 'Captured',
+        1: 'Authorized',
+        2: 'Not Authorized',
+        3: 'Disqualifying Error',
+        4: 'Waiting for Answer',
+    }
+
+    def __init__(self, xml):
+        super(BraspagOrderDataResponse, self).__init__(xml)
+        body = self.body.get('GetOrderDataResponse').get('GetOrderDataResult')
+        self.get_body_data(body)
+        if self.success:
+            transactions = body.get('TransactionDataCollection').get('OrderTransactionDataResponse')
             self.format_transactions(transactions)
         else:
             error_items = body.get('ErrorReportDataCollection').get('ErrorReportDataResponse')
