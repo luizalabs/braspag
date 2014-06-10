@@ -25,6 +25,16 @@ from tornado import ioloop
 from tornado import httpclient
 
 
+class TransactionType(object):
+    PRE_AUTHORIZATION = '1'
+    AUTOMATIC_CAPTURE = '2'
+    PRE_AUTHORIZATION_WITH_AUTHENTICATION = '3'
+    AUTOMATIC_CAPTURE_WITH_AUTHENTICATION = '4'
+    RECURRENT_PRE_AUTHORIZATION = '5'
+    RECURRENT_AUTOMATIC_CAPTURE = '6'
+
+
+
 class BraspagRequest(object):
     """
     Implements Braspag Pagador API (manual version 1.9).
@@ -69,6 +79,9 @@ class BraspagRequest(object):
 
     def _request(self, callback, xml, query=False):
         url = self._get_url(query and self.query_service or self.transaction_service)
+        #logging.info('\n\nurl: %s' % url)
+        #logging.info('xml: --%s--\n\n' % xml)
+        logging.debug(minidom.parseString(xml.encode('utf-8')).toprettyxml(indent='  '))
         self.http_client.fetch(self._get_request(url, xml), callback)
 
     def _authorize_callback(self, response):
@@ -102,6 +115,7 @@ class BraspagRequest(object):
             'order_id': kwargs['order_id'],
             'customer_id': kwargs['customer_id'],
             'customer_name': kwargs['customer_name'],
+            'transaction_type': TransactionType.PRE_AUTHORIZATION,
             'customer_email': kwargs['customer_email'],
             'transactions': transactions,
         })
@@ -128,25 +142,6 @@ class BraspagRequest(object):
         else:
             return CreditCardCaptureResponse(xml_response)
 
-
-    def void(self, **kwargs):
-        """Void the given amount for the given transaction_id.
-
-        This method should be used to return funds to customers
-        for transactions that happened within less than 23h and
-        59 minutes ago. For other transactions use
-        :meth:`~braspag.BraspagRequest.refund`.
-
-        If the amount is 0 (zero) the full transaction will be
-        voided.
-
-        :returns: :class:`~braspag.BraspagResponse`
-
-        """
-        kwargs['type'] = 'Void'
-        kwargs['amount'] = kwargs.get('amount', 0)
-        return self._base_transaction(**kwargs)
-
     def refund(self, **kwargs):
         """Refund the given amount for the given transaction_id.
 
@@ -166,21 +161,6 @@ class BraspagRequest(object):
         return self._base_transaction(**kwargs)
 
     def _capture_callback(self, response):
-        xmlresponse = response.body
-        logging.info('-- capture response.body: ---%s---' % response.body)
-
-        data_dict = {
-            'amount': kwargs.get('amount'),
-            'type': kwargs.get('type'),
-            'transaction_id': kwargs.get('transaction_id'),
-            'request_id': kwargs.get('request_id'),
-        }
-        xml_request = self._render_template('base.xml', data_dict)
-        xml_response = self._request(xml_request)
-
-        self.user_capture_callback(CreditCardCaptureResponse(xmlresponse))
-
-    def _capture_callback(self, response):
         logging.info('-- response: %s' % response.body)
         self.user_capture_callback(CreditCardCaptureResponse(response.body))
 
@@ -189,21 +169,49 @@ class BraspagRequest(object):
 
         This method should only be called after pre-authorizing the
         transaction by calling :meth:`~braspag.BraspagRequest.authorize`
-        with `transaction_types` 1 or 3.
+        with `transaction_types` TransactionType.PRE_AUTHORIZATION or
+        TransactionType.PRE_AUTHORIZATION_WITH_AUTHENTICATION.
 
         :returns: :class:`~braspag.BraspagResponse`
 
         """
         assert is_valid_guid(kwargs.get('transaction_id')), 'Transaction ID invalido'
+        assert kwargs.has_key('amount'), 'Amount required'
+        assert isinstance(kwargs.get('amount', None), Decimal), 'Amount must be Decimal'
+        assert callable(user_callback), 'You must pass in a method or function as first argument'
 
         data_dict = {
-            'amount': kwargs.get('amount'),
-            'type': kwargs.get('type'),
+            'amount': int(kwargs.get('amount')) * 100,
+            'type': 'Capture',
+            'transaction_type': 3,
             'transaction_id': kwargs.get('transaction_id'),
             'request_id': kwargs.get('request_id'),
         }
         xml_request = self._render_template('base.xml', data_dict)
+
+        self.user_capture_callback = user_callback
         self._request(self._capture_callback, spaceless(xml_request))
+
+    def _void_callback(self, response):
+        logging.info('-- response: %s' % response.body)
+        self.user_void_callback(CreditCardCancelResponse(response.body))
+
+    def void(self, user_callback, **kwargs):
+        assert is_valid_guid(kwargs.get('transaction_id')), 'Transaction ID invalido'
+        assert kwargs.has_key('amount'), 'Amount required'
+        assert isinstance(kwargs.get('amount', None), Decimal), 'Amount must be Decimal'
+        assert callable(user_callback), 'You must pass in a method or function as first argument'
+
+        data_dict = {
+            'amount': int(kwargs.get('amount')) * 100,
+            'type': 'Void',
+            'transaction_id': kwargs.get('transaction_id'),
+            'request_id': kwargs.get('request_id'),
+        }
+        xml_request = self._render_template('base.xml', data_dict)
+
+        self.user_void_callback = user_callback
+        self._request(self._void_callback, spaceless(xml_request))
 
     def _render_template(self, template_name, data_dict):
         data_dict['merchant_id'] = self.merchant_id
@@ -421,8 +429,7 @@ class BraspagTransaction(object):
             kwargs['country'] = 'BRA'
 
         if not kwargs.get('transaction_type'):
-            # 2 = captura automatica
-            kwargs['transaction_type'] = 2
+            kwargs['transaction_type'] = TransactionType.PRE_AUTHORIZATION
 
         if kwargs.get('save_card', False):
             kwargs['save_card'] = 'true'

@@ -5,6 +5,7 @@ import uuid
 import logging
 from tornado import ioloop
 from datetime import timedelta
+from decimal import Decimal
 
 from pprint import pformat
 from braspag.core import BraspagRequest
@@ -21,11 +22,24 @@ else:
 # Create request object
 request = BraspagRequest(merchant_id=MERCHANT_ID, homologation=True)
 
-def capture_callback(response):
+def void_callback(response):
     logging.info(pformat(response.__dict__))
-    logging.info('captured! transaction_id: %s' % response.braspag_order_id)
+    logging.info('voided? transaction_id: %s' % response.transactions[0]['braspag_transaction_id'])
 
     ioloop.IOLoop.instance().stop()
+
+
+def capture_callback(response):
+    logging.info(pformat(response.__dict__))
+    logging.info('captured! transaction_id: %s' % response.transactions[0]['braspag_transaction_id'])
+
+    transaction = response.transactions[0]
+
+    request.void(void_callback,
+                 transaction_id=transaction['braspag_transaction_id'],
+                 amount=transaction['amount'],
+                 request_id=None
+                 )
 
 def authorize_callback(response):
     logging.info(pformat(response.__dict__))
@@ -34,8 +48,13 @@ def authorize_callback(response):
     # capture the transaction
     for transaction in response.transactions:
         braspag_transaction_id = transaction['braspag_transaction_id']
-        logging.info('firing request to capture: %s' % braspag_transaction_id)
-        request.capture(capture_callback, transaction_id=braspag_transaction_id)
+        amount = transaction['amount']
+        logging.info('firing request to capture: %s amount: %s' % (braspag_transaction_id, amount))
+        request.capture(capture_callback,
+                        transaction_id=braspag_transaction_id,
+                        amount=amount,
+                        request_id=None,
+                        )
 
 # Authorize
 logging.info('firing request')
@@ -48,7 +67,7 @@ request.authorize(
     customer_email='jose123@dasilva.com.br',
     transactions=[
         {
-        'amount': 10000,
+        'amount': Decimal(10000.00),
         'card_holder': 'Jose da Silva',
         'card_number': '0000000000000001',
         'card_security_code': '123',
@@ -56,7 +75,7 @@ request.authorize(
         'save_card': True,
         'payment_method': PAYMENT_METHODS['Simulated']['BRL'],
     },{
-        'amount': 20000,
+        'amount': Decimal(20000.00),
         'card_holder': 'Paulo da Silva',
         'card_number': '9000000000000001',
         'card_security_code': '123',
@@ -66,10 +85,6 @@ request.authorize(
     }],
 )
 logging.info('fired')
-
-# Void
-#response3 = request.void(transaction_id=response.transaction_id)
-#logging.info(pformat(response3.__dict__))
 
 def dot():
     logging.debug(u'iteration')

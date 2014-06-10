@@ -67,7 +67,7 @@ def to_int(value):
     else:
         #some BoletoNumber came with - e.g: 10027-1
         return int(value.replace('-',''))
- 
+
 
 class PagadorResponse(object):
 
@@ -97,7 +97,7 @@ class PagadorResponse(object):
                     else:
                         tag = tag_info
                         convert = to_unicode
-                    
+
                     if elem.tag.endswith('}' + tag):
                         value = convert(str(elem.text).strip())
                         setattr(self, field, value)
@@ -209,7 +209,7 @@ class CreditCardAuthorizationResponse(PagadorDictResponse):
         if self.success:
             self.braspag_order_id = body.get('OrderData').get('BraspagOrderId')
             self.order_id = body.get('OrderData').get('OrderId')
-            
+
             transactions = body.get('PaymentDataCollection').get('PaymentDataResponse')
             self.format_transactions(transactions)
         else:
@@ -282,7 +282,7 @@ class CreditCardRefundResponse(PagadorDictResponse):
 
 
 class BraspagOrderDataResponse(PagadorDictResponse):
-    
+
     STATUS = {
         0: 'Unknown',
         1: 'Captured',
