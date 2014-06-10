@@ -3,7 +3,6 @@
 from __future__ import absolute_import
 
 import uuid
-#import httplib
 import logging
 import unicodedata
 import urlparse
@@ -32,7 +31,6 @@ class TransactionType(object):
     AUTOMATIC_CAPTURE_WITH_AUTHENTICATION = '4'
     RECURRENT_PRE_AUTHORIZATION = '5'
     RECURRENT_AUTOMATIC_CAPTURE = '6'
-
 
 
 class BraspagRequest(object):
@@ -77,10 +75,15 @@ class BraspagRequest(object):
         return HTTPRequest(url=url, method='POST',
                            body=body, headers=headers and headers or self.headers)
 
+    def _convert_amount(self, decimal_value):
+        """Helper to ensure we convert the amount in a single method.
+        _Always_ use this method to convert the amount value from the
+        decimal type to integer.
+        """
+        return int(decimal_value) * 100
+
     def _request(self, callback, xml, query=False):
         url = self._get_url(query and self.query_service or self.transaction_service)
-        #logging.info('\n\nurl: %s' % url)
-        #logging.info('xml: --%s--\n\n' % xml)
         logging.debug(minidom.parseString(xml.encode('utf-8')).toprettyxml(indent='  '))
         self.http_client.fetch(self._get_request(url, xml), callback)
 
@@ -90,7 +93,7 @@ class BraspagRequest(object):
         in our case CreditCardAuthorizationResponse() and call the
         user callback with it as an argument.
         """
-        #logging.debug('response.body: ---%s---' % response.body)
+        logging.debug(u'response: {0}'.format(response.body))
         self.user_authorize_callback(CreditCardAuthorizationResponse(response.body))
 
     def authorize(self, user_callback, **kwargs):
@@ -160,8 +163,16 @@ class BraspagRequest(object):
         kwargs['amount'] = kwargs.get('amount', 0)
         return self._base_transaction(**kwargs)
 
+    def _render_capture_template(self, **kwargs):
+        return spaceless(self._render_template('base.xml', {
+            'amount': self._convert_amount(kwargs['amount']),
+            'type': 'Capture',
+            'transaction_id': kwargs.get('transaction_id'),
+            'request_id': kwargs.get('request_id'),
+        }))
+
     def _capture_callback(self, response):
-        logging.info('-- response: %s' % response.body)
+        logging.debug(u'capture response: {0}'.format(response.body))
         self.user_capture_callback(CreditCardCaptureResponse(response.body))
 
     def capture(self, user_callback, **kwargs):
@@ -176,24 +187,14 @@ class BraspagRequest(object):
 
         """
         assert is_valid_guid(kwargs.get('transaction_id')), 'Transaction ID invalido'
-        assert kwargs.has_key('amount'), 'Amount required'
-        assert isinstance(kwargs.get('amount', None), Decimal), 'Amount must be Decimal'
+        assert isinstance(kwargs.get('amount', None), Decimal), 'Amount is required and must be Decimal'
         assert callable(user_callback), 'You must pass in a method or function as first argument'
 
-        data_dict = {
-            'amount': int(kwargs.get('amount')) * 100,
-            'type': 'Capture',
-            'transaction_type': 3,
-            'transaction_id': kwargs.get('transaction_id'),
-            'request_id': kwargs.get('request_id'),
-        }
-        xml_request = self._render_template('base.xml', data_dict)
-
         self.user_capture_callback = user_callback
-        self._request(self._capture_callback, spaceless(xml_request))
+        self._request(self._capture_callback, self._render_capture_template(**kwargs))
 
     def _void_callback(self, response):
-        logging.info('-- response: %s' % response.body)
+        logging.debug(u'response: {0}'.format(response.body))
         self.user_void_callback(CreditCardCancelResponse(response.body))
 
     def void(self, user_callback, **kwargs):
