@@ -14,7 +14,7 @@ from .exceptions import BraspagHttpResponseException
 from .response import (CreditCardAuthorizationResponse, BilletResponse,
     BilletDataResponse, CreditCardCancelResponse, CreditCardRefundResponse,
     BraspagOrderIdResponse, CustomerDataResponse, CreditCardCaptureResponse,
-    TransactionDataResponse)
+    TransactionDataResponse, BraspagOrderDataResponse)
 from xml.dom import minidom
 from xml.etree import ElementTree
 from decimal import Decimal, InvalidOperation
@@ -245,6 +245,26 @@ class BraspagRequest(object):
         xml_request = self._render_template('get_braspag_order_id.xml', context)
         xml_response = self._request(spaceless(xml_request), query=True)
         return BraspagOrderIdResponse(xml_response)
+
+    def get_order_data(self, **kwargs):
+        """All arguments supplied to this method must be keyword arguments.
+
+        :arg order_id: The id of the order generated previously by
+        *authorize*
+
+        :returns: :class:`~braspag.BraspagOrderDataResponse`
+
+        """
+        assert is_valid_guid(kwargs.get('order_id')), 'Invalid Order ID'
+        
+        context = {
+            'order_id': kwargs.get('order_id'),
+            'request_id': kwargs.get('request_id')
+        }
+        
+        xml_request = self._render_template('get_braspag_order_data.xml', context)
+        xml_response = self._request(spaceless(xml_request), query=True)
+        return BraspagOrderDataResponse(xml_response)
 
     def get_customer_data(self, **kwargs):
         """All arguments supplied to this method must be keyword arguments.

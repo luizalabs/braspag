@@ -1,0 +1,11 @@
+{% extends 'base.xml' %}
+{% block body_content %}
+<GetOrderData xmlns="https://www.pagador.com.br/query/pagadorquery">
+  <orderDataRequest>
+  	<RequestId>{{ request_id }}</RequestId>
+    <Version>1.0</Version>
+    <MerchantId>{{ merchant_id }}</MerchantId>
+    <BraspagOrderId>{{ order_id }}</BraspagOrderId>
+  </orderDataRequest>
+</GetOrderData>
+{% endblock %}
