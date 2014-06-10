@@ -284,11 +284,14 @@ class CreditCardRefundResponse(PagadorDictResponse):
 class BraspagOrderDataResponse(PagadorDictResponse):
     
     STATUS = {
-        0: 'Captured',
-        1: 'Authorized',
-        2: 'Not Authorized',
-        3: 'Disqualifying Error',
-        4: 'Waiting for Answer',
+        0: 'Unknown',
+        1: 'Captured',
+        2: 'Authorized',
+        3: 'Not Authorized',
+        4: 'Voided',
+        5: 'Refunded',
+        6: 'Waiting',
+        7: 'Unqualified',
     }
 
     def __init__(self, xml):
