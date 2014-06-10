@@ -18,3 +18,10 @@ def is_valid_guid(guid):
         return False
 
     return True
+
+def convert_amount(decimal_value):
+    """Helper to ensure we convert the amount in a single method.
+    _Always_ use this method to convert the amount value from the
+    decimal type to integer.
+    """
+    return int(decimal_value) * 100

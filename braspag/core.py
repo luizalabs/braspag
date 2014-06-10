@@ -9,7 +9,7 @@ import urlparse
 
 import jinja2
 
-from .utils import spaceless, is_valid_guid
+from .utils import spaceless, is_valid_guid, convert_amount
 from .exceptions import BraspagHttpResponseException
 from .response import (CreditCardAuthorizationResponse, BilletResponse,
     BilletDataResponse, CreditCardCancelResponse, CreditCardRefundResponse,
@@ -66,23 +66,27 @@ class BraspagRequest(object):
 
     @property
     def headers(self):
+        """default heders to be sent on http requests"""
         return { "Content-Type": "text/xml; charset=UTF-8" }
 
     def _get_url(self, service):
+        """Return the full URL for a given service
+        """
         return urlparse.urljoin(self.url, service)
 
     def _get_request(self, url, body, headers=None):
+        """Return an instance of HTTPRequest, with POST as the hardcoded
+        HTTP method and optionally custom headers.
+        The payload is in 'body' variable and HTTPRequest automatically
+        encodes it to utf-8 is it's not already.
+        """
         return HTTPRequest(url=url, method='POST',
                            body=body, headers=headers and headers or self.headers)
 
-    def _convert_amount(self, decimal_value):
-        """Helper to ensure we convert the amount in a single method.
-        _Always_ use this method to convert the amount value from the
-        decimal type to integer.
-        """
-        return int(decimal_value) * 100
-
     def _request(self, callback, xml, query=False):
+        """Actually send the HTTP request, note that we don't return anything here
+        since it's an asynchronous request.
+        """
         url = self._get_url(query and self.query_service or self.transaction_service)
         logging.debug(minidom.parseString(xml.encode('utf-8')).toprettyxml(indent='  '))
         self.http_client.fetch(self._get_request(url, xml), callback)
@@ -109,67 +113,30 @@ class BraspagRequest(object):
 
         :returns: :class:`~braspag.BraspagResponse`
         """
-        transactions = []
-        for transaction in kwargs['transactions']:
-            transactions.append(BraspagTransaction(**transaction))
+        required_keys = ['order_id', 'customer_id', 'customer_name', 'customer_email', 'transactions']
+        assert all([kwargs.has_key(k) for k in required_keys]), 'authorize requires all the variables: {0}'.format(required_keys)
+        assert callable(user_callback), 'You must pass in a method or function as first argument'
 
-        xml_request = self._render_template('authorize.xml', {
-            'request_id': kwargs['request_id'],
-            'order_id': kwargs['order_id'],
-            'customer_id': kwargs['customer_id'],
-            'customer_name': kwargs['customer_name'],
-            'transaction_type': TransactionType.PRE_AUTHORIZATION,
-            'customer_email': kwargs['customer_email'],
-            'transactions': transactions,
-        })
         self.user_authorize_callback = user_callback
-        self._request(self._authorize_callback, spaceless(xml_request))
 
-    def _base_transaction(self, user_callback, **kwargs):
-        assert kwargs.get('type') in ('Refund', 'Void', 'Capture')
+        kwargs['transactions'] = [BraspagTransaction(**t) for t in kwargs['transactions']]
+        kwargs.update(transaction_type=TransactionType.PRE_AUTHORIZATION)
+
+        self._request(self._authorize_callback,
+                      self._render_template('authorize.xml', kwargs))
+
+    def _refund_callback(self, response):
+        logging.debug(u'response: {0}'.format(response.body))
+        self.user_refund_callback(CreditCardRefundResponse(response.body))
+
+    def refund(self, user_callback, **kwargs):
         assert is_valid_guid(kwargs.get('transaction_id')), 'Transaction ID invalido'
+        assert isinstance(kwargs.get('amount', None), Decimal), 'Amount is required and must be Decimal'
+        assert callable(user_callback), 'You must pass in a method or function as first argument'
 
-        data_dict = {
-            'amount': kwargs.get('amount'),
-            'type': kwargs.get('type'),
-            'transaction_id': kwargs.get('transaction_id'),
-            'request_id': kwargs.get('request_id'),
-        }
-        xml_request = self._render_template('base.xml', data_dict)
-        xml_response = self._request(xml_request)
-
-        if kwargs.get('type') == 'Void':
-            return CreditCardCancelResponse(xml_response)
-        elif kwargs.get('type') == 'Refund':
-            return CreditCardRefundResponse(xml_response)
-        else:
-            return CreditCardCaptureResponse(xml_response)
-
-    def refund(self, **kwargs):
-        """Refund the given amount for the given transaction_id.
-
-        This method should be used to return funds to customers
-        for transactions that happened at least 24 hours ago.
-        For transactions that happended within 24 hours use
-        :meth:`~braspag.BraspagRequest.void`.
-
-        If the amount is 0 (zero) the full transaction will be
-        refunded.
-
-        :returns: :class:`~braspag.BraspagResponse`
-
-        """
+        self.user_refund_callback = user_callback
         kwargs['type'] = 'Refund'
-        kwargs['amount'] = kwargs.get('amount', 0)
-        return self._base_transaction(**kwargs)
-
-    def _render_capture_template(self, **kwargs):
-        return spaceless(self._render_template('base.xml', {
-            'amount': self._convert_amount(kwargs['amount']),
-            'type': 'Capture',
-            'transaction_id': kwargs.get('transaction_id'),
-            'request_id': kwargs.get('request_id'),
-        }))
+        self._request(self._refund_callback, self._render_template('base.xml', kwargs))
 
     def _capture_callback(self, response):
         logging.debug(u'capture response: {0}'.format(response.body))
@@ -191,7 +158,8 @@ class BraspagRequest(object):
         assert callable(user_callback), 'You must pass in a method or function as first argument'
 
         self.user_capture_callback = user_callback
-        self._request(self._capture_callback, self._render_capture_template(**kwargs))
+        kwargs['type'] = 'Capture'
+        self._request(self._capture_callback, self._render_template('base.xml', kwargs))
 
     def _void_callback(self, response):
         logging.debug(u'response: {0}'.format(response.body))
@@ -199,23 +167,18 @@ class BraspagRequest(object):
 
     def void(self, user_callback, **kwargs):
         assert is_valid_guid(kwargs.get('transaction_id')), 'Transaction ID invalido'
-        assert kwargs.has_key('amount'), 'Amount required'
-        assert isinstance(kwargs.get('amount', None), Decimal), 'Amount must be Decimal'
+        assert isinstance(kwargs.get('amount', None), Decimal), 'Amount is required and must be Decimal'
         assert callable(user_callback), 'You must pass in a method or function as first argument'
 
-        data_dict = {
-            'amount': int(kwargs.get('amount')) * 100,
-            'type': 'Void',
-            'transaction_id': kwargs.get('transaction_id'),
-            'request_id': kwargs.get('request_id'),
-        }
-        xml_request = self._render_template('base.xml', data_dict)
-
         self.user_void_callback = user_callback
-        self._request(self._void_callback, spaceless(xml_request))
+        kwargs['type'] = 'Void'
+        self._request(self._void_callback, self._render_template('base.xml', kwargs))
 
     def _render_template(self, template_name, data_dict):
         data_dict['merchant_id'] = self.merchant_id
+
+        if data_dict.has_key('amount'):
+            data_dict.update(amount=convert_amount(data_dict['amount']))
 
         if not data_dict.get('request_id'):
             data_dict['request_id'] = unicode(uuid.uuid4())
@@ -223,7 +186,7 @@ class BraspagRequest(object):
         template = self.jinja_env.get_template(template_name)
         xml_request = template.render(data_dict)
         #self.log.debug(xml_request)
-        return xml_request
+        return spaceless(xml_request)
 
     def issue_billet(self, **kwargs):
         """All arguments supplied to this method must be keyword arguments.
@@ -451,4 +414,7 @@ class BraspagTransaction(object):
         for attr in ('amount', 'card_holder', 'card_number', 'card_security_code', 'card_token',
                      'card_exp_date', 'number_of_payments', 'currency', 'country', 'payment_plan',
                      'payment_method', 'soft_descriptor', 'save_card', 'transaction_type'):
+            if attr == 'amount':
+                assert isinstance(kwargs[attr], Decimal), 'amount must be Decimal'
+                kwargs.update(amount=convert_amount(kwargs[attr]))
             setattr(self, attr, kwargs[attr])

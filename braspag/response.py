@@ -243,8 +243,8 @@ class CreditCardCaptureResponse(PagadorDictResponse):
 class CreditCardCancelResponse(PagadorDictResponse):
 
     STATUS = {
-        0: 'Void/Refund Confirmed',
-        1: 'Void/Refund Denied',
+        0: 'Void Confirmed',
+        1: 'Void Denied',
         2: 'Invalid Transaction',
     }
 
@@ -264,8 +264,8 @@ class CreditCardCancelResponse(PagadorDictResponse):
 class CreditCardRefundResponse(PagadorDictResponse):
 
     STATUS = {
-        0: 'Void/Refund Confirmed',
-        1: 'Void/Refund Denied',
+        0: 'Refund Confirmed',
+        1: 'Refund Denied',
         2: 'Invalid Transaction',
     }
 

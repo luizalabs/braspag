@@ -26,20 +26,33 @@ def void_callback(response):
     logging.info(pformat(response.__dict__))
     logging.info('voided? transaction_id: %s' % response.transactions[0]['braspag_transaction_id'])
 
-    ioloop.IOLoop.instance().stop()
 
+def refund_callback(response):
+    logging.info(pformat(response.__dict__))
+    logging.info('refunded? transaction_id: %s' % response.transactions[0]['braspag_transaction_id'])
 
+voided_one = False
 def capture_callback(response):
     logging.info(pformat(response.__dict__))
     logging.info('captured! transaction_id: %s' % response.transactions[0]['braspag_transaction_id'])
 
     transaction = response.transactions[0]
 
-    request.void(void_callback,
-                 transaction_id=transaction['braspag_transaction_id'],
-                 amount=transaction['amount'],
-                 request_id=None
-                 )
+    # void the first, refund the second
+    global voided_one
+    if voided_one:
+        request.refund(refund_callback,
+                    transaction_id=transaction['braspag_transaction_id'],
+                    amount=transaction['amount'],
+                    request_id=None
+                    )
+    else:
+        request.void(void_callback,
+                    transaction_id=transaction['braspag_transaction_id'],
+                    amount=transaction['amount'],
+                    request_id=None
+                    )
+    voided_one = True
 
 def authorize_callback(response):
     logging.info(pformat(response.__dict__))
