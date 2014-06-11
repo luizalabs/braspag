@@ -3,19 +3,19 @@ from __future__ import absolute_import
 
 import re
 import codecs
-import unittest
 
 from mock import MagicMock
+from tornado.testing import AsyncTestCase
 
 from braspag import BraspagRequest
 
 
-class BraspagTestCase(unittest.TestCase):
+class BraspagTestCase(AsyncTestCase):
 
     def setUp(self):
-        merchant_id = '12345678-1234-1234-1234-1234567890AB'
-        self.braspag = BraspagRequest(merchant_id=merchant_id)
-        self.braspag._request = MagicMock()
+        super(BraspagTestCase, self).setUp()
+        merchant_id = u'F9B44052-4AE0-E311-9406-0026B939D54B'
+        self.braspag = BraspagRequest(merchant_id=merchant_id, homologation=True)
 
 
 class RegexpMatcher(object):
