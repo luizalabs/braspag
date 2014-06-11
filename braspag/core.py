@@ -67,6 +67,8 @@ class BraspagRequest(object):
         self.user_capture_callback = None
         self.user_void_callback = None
         self.user_refund_callback = None
+        self.get_order_id_by_transaction_id_callback = None
+        self.customer_data_callback = None
 
         # services
         self.query_service = '/services/pagadorQuery.asmx'
@@ -204,7 +206,12 @@ class BraspagRequest(object):
         #self.log.debug(xml_request)
         return spaceless(xml_request)
 
-    def get_order_id_by_transaction_id(self, **kwargs):
+    def _get_order_id_by_transaction_id_callback(self, response):
+        logging.debug(u'response: {0}'.format(response.body))
+        self.get_order_id_by_transaction_id_callback(BraspagOrderIdResponse(response.body))
+
+    @classmethod
+    def get_order_id_by_transaction_id(klass, user_callback, merchant_id, homologation=False, **kwargs):
         """All arguments supplied to this method must be keyword arguments.
 
         :arg transaction_id: The id of the transaction generated previously by
@@ -214,17 +221,26 @@ class BraspagRequest(object):
 
         """
         assert is_valid_guid(kwargs.get('transaction_id')), 'Invalid Transaction ID'
+        assert callable(user_callback), 'You must pass in a method or function as first argument'
+
+        instance = klass(merchant_id, homologation=homologation)
+        instance.get_order_id_by_transaction_id_callback = user_callback
 
         context = {
             'transaction_id': kwargs.get('transaction_id'),
             'request_id': kwargs.get('request_id')
         }
 
-        xml_request = self._render_template('get_braspag_order_id.xml', context)
-        xml_response = self._request(spaceless(xml_request), query=True)
-        return BraspagOrderIdResponse(xml_response)
+        instance._request(instance._get_order_id_by_transaction_id_callback,
+                          instance._render_template('get_braspag_order_id.xml',
+                                                    context), query=True)
 
-    def get_customer_data(self, **kwargs):
+    def _get_customer_data_callback(self, response):
+        logging.debug('response: {0}'.format(response.body))
+        self.get_customer_data_callback(CustomerDataResponse(response.body))
+
+    @classmethod
+    def get_customer_data(klass, user_callback, merchant_id, homologation=False, **kwargs):
         """All arguments supplied to this method must be keyword arguments.
 
         :arg order_id: The id of the order generated previously by *get_order_id*
@@ -234,14 +250,24 @@ class BraspagRequest(object):
 
         """
         assert is_valid_guid(kwargs.get('order_id')), 'Invalid Order ID'
+        assert callable(user_callback), 'You must pass in a method or function as first argument'
+
+        instance = klass(merchant_id, homologation=homologation)
+        instance.get_customer_data_callback = user_callback
 
         context = {
             'order_id': kwargs.get('order_id'),
             'request_id': kwargs.get('request_id')
         }
-        xml_request = self._render_template('get_customer_data.xml', context)
-        xml_response = self._request(spaceless(xml_request), query=True)
-        return CustomerDataResponse(xml_response)
+
+        instance._request(instance._get_customer_data_callback,
+                          instance._render_template('get_customer_data.xml',
+                                                    context), query=True)
+
+        #xml_request = self._render_template('get_customer_data.xml', context)
+        #xml_response = self._request(spaceless(xml_request), query=True)
+
+        #return CustomerDataResponse(xml_response)
 
     def get_transaction_data(self, **kwargs):
         """All arguments supplied to this method must be keyword arguments.

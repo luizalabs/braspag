@@ -99,7 +99,7 @@ class PagadorResponse(object):
                         convert = to_unicode
 
                     if elem.tag.endswith('}' + tag):
-                        value = convert(str(elem.text).strip())
+                        value = convert(unicode(elem.text).strip())
                         setattr(self, field, value)
                     elif elem.tag.endswith('}ErrorReportDataResponse'):
                         error = self._get_error(elem)
