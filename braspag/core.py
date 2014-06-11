@@ -9,15 +9,23 @@ import urlparse
 
 import jinja2
 
-from .utils import spaceless, is_valid_guid, convert_amount
+from .utils import spaceless
+from .utils import is_valid_guid
+from .utils import convert_amount
+from .utils import method_must_be_redesigned
 from .exceptions import BraspagHttpResponseException
-from .response import (CreditCardAuthorizationResponse, BilletResponse,
-    BilletDataResponse, CreditCardCancelResponse, CreditCardRefundResponse,
-    BraspagOrderIdResponse, CustomerDataResponse, CreditCardCaptureResponse,
-    TransactionDataResponse, BraspagOrderDataResponse)
+from .response import CreditCardAuthorizationResponse
+from .response import BilletResponse
+from .response import BilletDataResponse
+from .response import CreditCardCancelResponse
+from .response import CreditCardRefundResponse
+from .response import BraspagOrderIdResponse
+from .response import CustomerDataResponse
+from .response import CreditCardCaptureResponse
+from .response import TransactionDataResponse
+from decimal import Decimal
+from decimal import InvalidOperation
 from xml.dom import minidom
-from xml.etree import ElementTree
-from decimal import Decimal, InvalidOperation
 
 from tornado.httpclient import HTTPRequest
 from tornado import ioloop
@@ -188,6 +196,64 @@ class BraspagRequest(object):
         #self.log.debug(xml_request)
         return spaceless(xml_request)
 
+    def get_order_id_by_transaction_id(self, **kwargs):
+        """All arguments supplied to this method must be keyword arguments.
+
+        :arg transaction_id: The id of the transaction generated previously by
+        *issue_billet*
+
+        :returns: :class:`~braspag.BraspagOrderIdResponse`
+
+        """
+        assert is_valid_guid(kwargs.get('transaction_id')), 'Invalid Transaction ID'
+
+        context = {
+            'transaction_id': kwargs.get('transaction_id'),
+            'request_id': kwargs.get('request_id')
+        }
+
+        xml_request = self._render_template('get_braspag_order_id.xml', context)
+        xml_response = self._request(spaceless(xml_request), query=True)
+        return BraspagOrderIdResponse(xml_response)
+
+    def get_customer_data(self, **kwargs):
+        """All arguments supplied to this method must be keyword arguments.
+
+        :arg order_id: The id of the order generated previously by *get_order_id*
+        passing trasaction_id as argument
+
+        :returns: :class:`~braspag.CustomerDataResponse`
+
+        """
+        assert is_valid_guid(kwargs.get('order_id')), 'Invalid Order ID'
+
+        context = {
+            'order_id': kwargs.get('order_id'),
+            'request_id': kwargs.get('request_id')
+        }
+        xml_request = self._render_template('get_customer_data.xml', context)
+        xml_response = self._request(spaceless(xml_request), query=True)
+        return CustomerDataResponse(xml_response)
+
+    def get_transaction_data(self, **kwargs):
+        """All arguments supplied to this method must be keyword arguments.
+
+        :arg transaction_id: The id of the transaction
+
+        :returns: :class:`~braspag.TransactionDataResponse`
+
+        """
+        assert is_valid_guid(kwargs.get('transaction_id')), 'Invalid Order ID'
+
+        context = {
+            'transaction_id': kwargs.get('transaction_id'),
+            'request_id': kwargs.get('request_id')
+        }
+        xml_request = self._render_template('get_transaction_data.xml', context)
+        xml_response = self._request(spaceless(xml_request), query=True)
+        return TransactionDataResponse(xml_response)
+
+    @method_must_be_redesigned
     def issue_billet(self, **kwargs):
         """All arguments supplied to this method must be keyword arguments.
 
@@ -228,6 +294,7 @@ class BraspagRequest(object):
         xml_request = self._render_template('authorize_billet.xml', kwargs)
         return BilletResponse(self._request(spaceless(xml_request)))
 
+    @method_must_be_redesigned
     def get_billet_data(self, **kwargs):
         """All arguments supplied to this method must be keyword arguments.
 
@@ -277,12 +344,12 @@ class BraspagRequest(object):
 
         """
         assert is_valid_guid(kwargs.get('order_id')), 'Invalid Order ID'
-        
+
         context = {
             'order_id': kwargs.get('order_id'),
             'request_id': kwargs.get('request_id')
         }
-        
+
         xml_request = self._render_template('get_braspag_order_data.xml', context)
         xml_response = self._request(spaceless(xml_request), query=True)
         return BraspagOrderDataResponse(xml_response)

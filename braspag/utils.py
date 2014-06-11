@@ -1,4 +1,8 @@
+# -*- encoding: utf-8 -*-
+
 import string
+import functools
+import warnings
 
 def spaceless(xml_str):
     return ''.join(line.strip() for line in xml_str.split('\n') if line.strip())
@@ -25,3 +29,19 @@ def convert_amount(decimal_value):
     decimal type to integer.
     """
     return int(decimal_value) * 100
+
+def method_must_be_redesigned(func):
+    """Decorator to mark functions that must be redesigned to work
+    asynchronously before being used.
+    """
+
+    @functools.wraps(func)
+    def new_func(*args, **kwargs):
+        warnings.warn_explicit(
+            u"If you plan to use {}(), please redesign it to work asynchronously.".format(func.__name__),
+            category=Exception,
+            filename=func.func_code.co_filename,
+            lineno=func.func_code.co_firstlineno + 1
+        )
+        return func(*args, **kwargs)
+    return new_func
