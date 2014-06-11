@@ -14,8 +14,7 @@ class BraspagTestCase(AsyncTestCase):
 
     def setUp(self):
         super(BraspagTestCase, self).setUp()
-        merchant_id = u'F9B44052-4AE0-E311-9406-0026B939D54B'
-        self.braspag = BraspagRequest(merchant_id=merchant_id, homologation=True)
+        self.merchant_id = u'F9B44052-4AE0-E311-9406-0026B939D54B'
 
 
 class RegexpMatcher(object):

@@ -4,28 +4,32 @@ from __future__ import absolute_import
 
 from decimal import Decimal
 from braspag.consts import PAYMENT_METHODS
+from braspag import BraspagRequest
 from .base import BraspagTestCase
 
 
 class AuthorizeTest(BraspagTestCase):
 
     def test_authorize(self):
-        self.braspag.authorize(self._authorize_callback, **{
-            'request_id': '782a56e2-2dae-11e2-b3ee-080027d29772',
-            'order_id': '2cf84e51-c45b-45d9-9f64-554a6e088668',
-            'customer_id': '12345678900',
-            'customer_name': u'José da Silva',
-            'customer_email': 'jose123@dasilva.com.br',
-            'transactions': [{
-                'amount': Decimal(1000),
-                'card_holder': 'Jose da Silva',
-                'card_number': '0000000000000001',
-                'card_security_code': '123',
-                'card_exp_date': '05/2018',
-                'save_card': True,
-                'payment_method': PAYMENT_METHODS['Simulated']['BRL'],
-            }],
-        })
+        BraspagRequest.authorize(self._authorize_callback,
+                                 self.merchant_id,
+                                 homologation=True,
+                                 **{
+                                     'request_id': '782a56e2-2dae-11e2-b3ee-080027d29772',
+                                     'order_id': '2cf84e51-c45b-45d9-9f64-554a6e088668',
+                                     'customer_id': '12345678900',
+                                     'customer_name': u'José da Silva',
+                                     'customer_email': 'jose123@dasilva.com.br',
+                                     'transactions': [{
+                                         'amount': Decimal(1000),
+                                         'card_holder': 'Jose da Silva',
+                                         'card_number': '0000000000000001',
+                                         'card_security_code': '123',
+                                         'card_exp_date': '05/2018',
+                                         'save_card': True,
+                                         'payment_method': PAYMENT_METHODS['Simulated']['BRL'],
+                                     }],
+                                 })
         self.wait(timeout=10)
 
     def _authorize_callback(self, response):

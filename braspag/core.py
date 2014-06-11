@@ -108,7 +108,8 @@ class BraspagRequest(object):
         logging.debug(u'response: {0}'.format(response.body))
         self.user_authorize_callback(CreditCardAuthorizationResponse(response.body))
 
-    def authorize(self, user_callback, **kwargs):
+    @classmethod
+    def authorize(klass, user_callback, merchant_id, homologation=False, **kwargs):
         """All arguments supplied to this method must be keyword arguments.
 
         :arg user_callback: callback to be called when we get a response from
@@ -125,32 +126,36 @@ class BraspagRequest(object):
         assert all([kwargs.has_key(k) for k in required_keys]), 'authorize requires all the variables: {0}'.format(required_keys)
         assert callable(user_callback), 'You must pass in a method or function as first argument'
 
-        self.user_authorize_callback = user_callback
+        instance = klass(merchant_id, homologation=homologation)
+        instance.user_authorize_callback = user_callback
 
         kwargs['transactions'] = [BraspagTransaction(**t) for t in kwargs['transactions']]
         kwargs.update(transaction_type=TransactionType.PRE_AUTHORIZATION)
 
-        self._request(self._authorize_callback,
-                      self._render_template('authorize.xml', kwargs))
+        instance._request(instance._authorize_callback,
+                      instance._render_template('authorize.xml', kwargs))
 
     def _refund_callback(self, response):
         logging.debug(u'response: {0}'.format(response.body))
         self.user_refund_callback(CreditCardRefundResponse(response.body))
 
-    def refund(self, user_callback, **kwargs):
+    @classmethod
+    def refund(klass, user_callback, merchant_id, homologation=False, **kwargs):
         assert is_valid_guid(kwargs.get('transaction_id')), 'Transaction ID invalido'
         assert isinstance(kwargs.get('amount', None), Decimal), 'Amount is required and must be Decimal'
         assert callable(user_callback), 'You must pass in a method or function as first argument'
 
-        self.user_refund_callback = user_callback
+        instance = klass(merchant_id, homologation=homologation)
+        instance.user_refund_callback = user_callback
         kwargs['type'] = 'Refund'
-        self._request(self._refund_callback, self._render_template('base.xml', kwargs))
+        instance._request(instance._refund_callback, instance._render_template('base.xml', kwargs))
 
     def _capture_callback(self, response):
         logging.debug(u'capture response: {0}'.format(response.body))
         self.user_capture_callback(CreditCardCaptureResponse(response.body))
 
-    def capture(self, user_callback, **kwargs):
+    @classmethod
+    def capture(klass, user_callback, merchant_id, homologation=False, **kwargs):
         """Capture the given `amount` from the given transaction_id.
 
         This method should only be called after pre-authorizing the
@@ -165,22 +170,25 @@ class BraspagRequest(object):
         assert isinstance(kwargs.get('amount', None), Decimal), 'Amount is required and must be Decimal'
         assert callable(user_callback), 'You must pass in a method or function as first argument'
 
-        self.user_capture_callback = user_callback
+        instance = klass(merchant_id, homologation=homologation)
+        instance.user_capture_callback = user_callback
         kwargs['type'] = 'Capture'
-        self._request(self._capture_callback, self._render_template('base.xml', kwargs))
+        instance._request(instance._capture_callback, instance._render_template('base.xml', kwargs))
 
     def _void_callback(self, response):
         logging.debug(u'response: {0}'.format(response.body))
         self.user_void_callback(CreditCardCancelResponse(response.body))
 
-    def void(self, user_callback, **kwargs):
+    @classmethod
+    def void(klass, user_callback, merchant_id, homologation=False, **kwargs):
         assert is_valid_guid(kwargs.get('transaction_id')), 'Transaction ID invalido'
         assert isinstance(kwargs.get('amount', None), Decimal), 'Amount is required and must be Decimal'
         assert callable(user_callback), 'You must pass in a method or function as first argument'
 
-        self.user_void_callback = user_callback
+        instance = klass(merchant_id, homologation=homologation)
+        instance.user_void_callback = user_callback
         kwargs['type'] = 'Void'
-        self._request(self._void_callback, self._render_template('base.xml', kwargs))
+        instance._request(instance._void_callback, instance._render_template('base.xml', kwargs))
 
     def _render_template(self, template_name, data_dict):
         data_dict['merchant_id'] = self.merchant_id
