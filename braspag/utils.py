@@ -23,12 +23,12 @@ def is_valid_guid(guid):
 
     return True
 
-def convert_amount(decimal_value):
+def convert_amount(float_value):
     """Helper to ensure we convert the amount in a single method.
     _Always_ use this method to convert the amount value from the
-    decimal type to integer.
+    float type to integer.
     """
-    return int(decimal_value) * 100
+    return int(float_value*100)
 
 def method_must_be_redesigned(func):
     """Decorator to mark functions that must be redesigned to work
@@ -37,7 +37,7 @@ def method_must_be_redesigned(func):
 
     @functools.wraps(func)
     def new_func(*args, **kwargs):
-        warnings.warn_explicit(
+        warnings.warn_explicit(  # pragma: no cover
             u"If you plan to use {}(), please redesign it to work asynchronously.".format(func.__name__),
             category=Exception,
             filename=func.func_code.co_filename,

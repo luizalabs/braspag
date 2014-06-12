@@ -7,9 +7,9 @@ from braspag import BraspagRequest
 from .base import BraspagTestCase
 
 
-class AuthorizeCaptureRefundTest(BraspagTestCase):
+class GetTransactionDataTest(BraspagTestCase):
 
-    def test_authorize_capture_refund(self):
+    def test_get_transaction_data(self):
         BraspagRequest.authorize(self._authorize_callback,
                                  self.merchant_id,
                                  homologation=True,
@@ -29,7 +29,7 @@ class AuthorizeCaptureRefundTest(BraspagTestCase):
                                          'payment_method': PAYMENT_METHODS['Simulated']['BRL'],
                                      }],
                                  })
-        self.wait(timeout=20)
+        self.wait(timeout=10)
 
     def _authorize_callback(self, response):
         assert response.success == True
@@ -42,37 +42,18 @@ class AuthorizeCaptureRefundTest(BraspagTestCase):
         assert response.transactions[0]['status'] == 1  # TODO: transformar em constante, tabela 13.10.1 do manual do pagador
         assert response.transactions[0]['status_message'] == 'Authorized'
 
-        BraspagRequest.capture(self._capture_callback,
-                               self.merchant_id,
-                               homologation=True,
-                               transaction_id=response.transactions[0]['braspag_transaction_id'],
-                               amount=response.transactions[0]['amount'],
-                               request_id=response.correlation_id,
-                               )
+        BraspagRequest.get_order_data(self._get_order_data_callback,
+                                                      self.merchant_id,
+                                                      homologation=True,
+                                                      **{
+                                                          'order_id': response.braspag_order_id
+                                                      })
 
-    def _capture_callback(self, response):
+    def _get_order_data_callback(self, response):
         assert response.success == True
         assert response.transactions[0]['amount'] == float('1000.00')
-        assert response.correlation_id == u'782a56e2-2dae-11e2-b3ee-080027d29772'
-        assert response.transactions[0]['return_code'] == '6' # TODO: transformar em constante
-        assert response.transactions[0]['return_message'] == u'Operation Successful'
-        assert response.transactions[0]['status'] == 0  # TODO: transformar em constante
-        assert response.transactions[0]['status_message'] == 'Captured'
-
-        BraspagRequest.refund(self._refund_callback,
-                              self.merchant_id,
-                              homologation=True,
-                              transaction_id=response.transactions[0]['braspag_transaction_id'],
-                              amount=response.transactions[0]['amount'],
-                              request_id=response.correlation_id,
-                              )
-
-    def _refund_callback(self, response):
-        assert response.success == True
-        assert response.transactions[0]['amount'] == float('1000.00')
-        assert response.correlation_id == u'782a56e2-2dae-11e2-b3ee-080027d29772'
-        assert response.transactions[0]['return_code'] == '0' # TODO: transformar em constante
-        assert response.transactions[0]['return_message'] == u'Operation Successful - 1,000.00'
-        assert response.transactions[0]['status'] == 0  # TODO: transformar em constante
-        assert response.transactions[0]['status_message'] == 'Refund Confirmed'
+        assert response.transactions[0]['payment_method'] == 997
+        assert response.transactions[0]['transaction_type'] == 1
+        assert response.transactions[0]['status'] == 2
+        assert response.transactions[0]['status_message'] == 'Authorized'
         self.stop()

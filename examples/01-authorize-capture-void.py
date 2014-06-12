@@ -5,7 +5,6 @@ import uuid
 import logging
 from tornado import ioloop
 from datetime import timedelta
-from decimal import Decimal
 
 from pprint import pformat
 from braspag.core import BraspagRequest
@@ -80,7 +79,7 @@ request.authorize(
     customer_email='jose123@dasilva.com.br',
     transactions=[
         {
-        'amount': Decimal(10000.00),
+        'amount': float(10000.00),
         'card_holder': 'Jose da Silva',
         'card_number': '0000000000000001',
         'card_security_code': '123',
@@ -88,7 +87,7 @@ request.authorize(
         'save_card': True,
         'payment_method': PAYMENT_METHODS['Simulated']['BRL'],
     },{
-        'amount': Decimal(20000.00),
+        'amount': float(20000.00),
         'card_holder': 'Paulo da Silva',
         'card_number': '9000000000000001',
         'card_security_code': '123',

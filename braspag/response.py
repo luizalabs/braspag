@@ -2,7 +2,6 @@
 import xml.parsers.expat
 import xml.etree.ElementTree as ET
 
-from decimal import Decimal
 from datetime import datetime
 from xml.etree.ElementTree import Element
 import xmltodict
@@ -46,8 +45,8 @@ def to_bool(value):
         return False
 
 
-def to_decimal(value):
-    return Decimal(int(value)/100.0).quantize(Decimal('1.00'))
+def to_float(value):
+    return float(int(value)/100.00)
 
 
 def to_unicode(value):
@@ -76,7 +75,7 @@ class PagadorResponse(object):
 
         self._fields['transaction_id'] = 'BraspagTransactionId'
         self._fields['correlation_id'] = 'CorrelationId'
-        self._fields['amount'] = ('Amount', to_decimal)
+        self._fields['amount'] = ('Amount', to_float)
         self._fields['success'] = ('Success', to_bool)
         self.errors = []
 
@@ -146,7 +145,7 @@ class PagadorDictResponse(object):
                 'braspag_transaction_id': transaction_items.get('BraspagTransactionId'),
                 'acquirer_transaction_id': transaction_items.get('AcquirerTransactionId'),
                 'authorization_code': transaction_items.get('AuthorizationCode'),
-                'amount': to_decimal(transaction_items.get('Amount')),
+                'amount': to_float(transaction_items.get('Amount')),
                 'status': status,
                 'status_message': self.STATUS[status],
                 'proof_of_sale': transaction_items.get('ProofOfSale'),
@@ -335,7 +334,7 @@ class BilletDataResponse(BilletResponse):
         self._fields['document_date'] = ('DocumentDate', to_date)
         self._fields['payment_date'] = ('PaymentDate', to_date)
         self._fields['type'] = 'BoletoType'
-        self._fields['paid_amount'] = ('PaidAmount', to_decimal)
+        self._fields['paid_amount'] = ('PaidAmount', to_float)
         self._fields['bank_number'] = 'BankNumber'
         self._fields['agency'] = 'Agency'
         self._fields['account'] = 'Account'
