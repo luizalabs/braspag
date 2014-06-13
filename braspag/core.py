@@ -337,6 +337,7 @@ class BraspagTransaction(object):
                     'card_number ou card_token devem ser fornecidos'
 
         if kwargs.get('card_number'):
+            kwargs['card_token'] = None
             card_keys = (
                 'card_holder',
                 'card_security_code',
@@ -390,7 +391,7 @@ class BraspagTransaction(object):
 
         kwargs['soft_descriptor'] = soft_desc
 
-        for attr in ('amount', 'card_holder', 'card_number', 'card_security_code',
+        for attr in ('amount', 'card_holder', 'card_number', 'card_security_code', 'card_token',
                      'card_exp_date', 'number_of_payments', 'currency', 'country', 'payment_plan',
                      'payment_method', 'soft_descriptor', 'save_card', 'transaction_type'):
             setattr(self, attr, kwargs[attr])

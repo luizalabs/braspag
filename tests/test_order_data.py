@@ -74,7 +74,7 @@ class OrderDataTest(BraspagTestCase):
         assert self.response.transactions[0]['captured_date'] == datetime(2014, 6, 5, 10, 23, 7)
 
     def test_status(self):
-        assert self.response.transactions[0]['status'] == 1
+        assert self.response.transactions[0]['status'] == 2
 
     def test_status_message(self):
         assert self.response.transactions[0]['status_message'] == 'Authorized'
