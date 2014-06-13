@@ -2,7 +2,6 @@
 import xml.parsers.expat
 import xml.etree.ElementTree as ET
 
-from decimal import Decimal
 from datetime import datetime
 from xml.etree.ElementTree import Element
 import xmltodict
@@ -46,8 +45,8 @@ def to_bool(value):
         return False
 
 
-def to_decimal(value):
-    return Decimal(int(value)/100.0).quantize(Decimal('1.00'))
+def to_float(value):
+    return float(int(value)/100.00)
 
 
 def to_unicode(value):
@@ -67,7 +66,7 @@ def to_int(value):
     else:
         #some BoletoNumber came with - e.g: 10027-1
         return int(value.replace('-',''))
- 
+
 
 class PagadorResponse(object):
 
@@ -76,7 +75,7 @@ class PagadorResponse(object):
 
         self._fields['transaction_id'] = 'BraspagTransactionId'
         self._fields['correlation_id'] = 'CorrelationId'
-        self._fields['amount'] = ('Amount', to_decimal)
+        self._fields['amount'] = ('Amount', to_float)
         self._fields['success'] = ('Success', to_bool)
         self.errors = []
 
@@ -97,9 +96,9 @@ class PagadorResponse(object):
                     else:
                         tag = tag_info
                         convert = to_unicode
-                    
+
                     if elem.tag.endswith('}' + tag):
-                        value = convert(str(elem.text).strip())
+                        value = convert(unicode(elem.text).strip())
                         setattr(self, field, value)
                     elif elem.tag.endswith('}ErrorReportDataResponse'):
                         error = self._get_error(elem)
@@ -146,7 +145,7 @@ class PagadorDictResponse(object):
                 'braspag_transaction_id': transaction_items.get('BraspagTransactionId'),
                 'acquirer_transaction_id': transaction_items.get('AcquirerTransactionId'),
                 'authorization_code': transaction_items.get('AuthorizationCode'),
-                'amount': to_decimal(transaction_items.get('Amount')),
+                'amount': to_float(transaction_items.get('Amount')),
                 'status': status,
                 'status_message': self.STATUS[status],
                 'proof_of_sale': transaction_items.get('ProofOfSale'),
@@ -209,7 +208,7 @@ class CreditCardAuthorizationResponse(PagadorDictResponse):
         if self.success:
             self.braspag_order_id = body.get('OrderData').get('BraspagOrderId')
             self.order_id = body.get('OrderData').get('OrderId')
-            
+
             transactions = body.get('PaymentDataCollection').get('PaymentDataResponse')
             self.format_transactions(transactions)
         else:
@@ -243,8 +242,8 @@ class CreditCardCaptureResponse(PagadorDictResponse):
 class CreditCardCancelResponse(PagadorDictResponse):
 
     STATUS = {
-        0: 'Void/Refund Confirmed',
-        1: 'Void/Refund Denied',
+        0: 'Void Confirmed',
+        1: 'Void Denied',
         2: 'Invalid Transaction',
     }
 
@@ -264,8 +263,8 @@ class CreditCardCancelResponse(PagadorDictResponse):
 class CreditCardRefundResponse(PagadorDictResponse):
 
     STATUS = {
-        0: 'Void/Refund Confirmed',
-        1: 'Void/Refund Denied',
+        0: 'Refund Confirmed',
+        1: 'Refund Denied',
         2: 'Invalid Transaction',
     }
 
@@ -282,7 +281,7 @@ class CreditCardRefundResponse(PagadorDictResponse):
 
 
 class BraspagOrderDataResponse(PagadorDictResponse):
-    
+
     STATUS = {
         0: 'Unknown',
         1: 'Captured',
@@ -335,7 +334,7 @@ class BilletDataResponse(BilletResponse):
         self._fields['document_date'] = ('DocumentDate', to_date)
         self._fields['payment_date'] = ('PaymentDate', to_date)
         self._fields['type'] = 'BoletoType'
-        self._fields['paid_amount'] = ('PaidAmount', to_decimal)
+        self._fields['paid_amount'] = ('PaidAmount', to_float)
         self._fields['bank_number'] = 'BankNumber'
         self._fields['agency'] = 'Agency'
         self._fields['account'] = 'Account'

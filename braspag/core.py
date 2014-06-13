@@ -3,21 +3,41 @@
 from __future__ import absolute_import
 
 import uuid
-import httplib
 import logging
 import unicodedata
+import urlparse
 
 import jinja2
 
-from .utils import spaceless, is_valid_guid
+from .utils import spaceless
+from .utils import is_valid_guid
+from .utils import convert_amount
+from .utils import method_must_be_redesigned
 from .exceptions import BraspagHttpResponseException
-from .response import (CreditCardAuthorizationResponse, BilletResponse,
-    BilletDataResponse, CreditCardCancelResponse, CreditCardRefundResponse,
-    BraspagOrderIdResponse, CustomerDataResponse, CreditCardCaptureResponse,
-    TransactionDataResponse, BraspagOrderDataResponse)
+from .response import CreditCardAuthorizationResponse
+from .response import BilletResponse
+from .response import BilletDataResponse
+from .response import CreditCardCancelResponse
+from .response import CreditCardRefundResponse
+from .response import BraspagOrderIdResponse
+from .response import CustomerDataResponse
+from .response import CreditCardCaptureResponse
+from .response import TransactionDataResponse
+from .response import BraspagOrderDataResponse
 from xml.dom import minidom
-from xml.etree import ElementTree
-from decimal import Decimal, InvalidOperation
+
+from tornado.httpclient import HTTPRequest
+from tornado import ioloop
+from tornado import httpclient
+
+
+class TransactionType(object):
+    PRE_AUTHORIZATION = '1'
+    AUTOMATIC_CAPTURE = '2'
+    PRE_AUTHORIZATION_WITH_AUTHENTICATION = '3'
+    AUTOMATIC_CAPTURE_WITH_AUTHENTICATION = '4'
+    RECURRENT_PRE_AUTHORIZATION = '5'
+    RECURRENT_AUTOMATIC_CAPTURE = '6'
 
 
 class BraspagRequest(object):
@@ -27,9 +47,9 @@ class BraspagRequest(object):
 
     def __init__(self, merchant_id=None, homologation=False):
         if homologation:
-            self.url = 'homologacao.pagador.com.br'
+            self.url = 'https://homologacao.pagador.com.br'
         else:
-            self.url = 'www.pagador.com.br'
+            self.url = 'https://www.pagador.com.br'
 
         self.merchant_id = merchant_id
 
@@ -39,136 +59,362 @@ class BraspagRequest(object):
         )
 
         self.log = logging.getLogger('braspag')
+        self.http_client = httpclient.AsyncHTTPClient()
 
-    def _request(self, xml, query=False):
-        if query:
-            uri = '/services/pagadorQuery.asmx'
-        else:
-            uri = '/webservice/pagadorTransaction.asmx'
+        # user callbacks
+        self.user_authorize_callback = None
+        self.user_capture_callback = None
+        self.user_void_callback = None
+        self.user_refund_callback = None
+        self.get_order_id_by_transaction_id_callback = None
+        self.get_customer_data_callback = None
+        self.get_transaction_data_callback = None
+        self.get_order_data_callback = None
 
-        if isinstance(xml, unicode):
-            xml = xml.encode('utf-8')
+        # services
+        self.query_service = '/services/pagadorQuery.asmx'
+        self.transaction_service = '/webservice/pagadorTransaction.asmx'
 
-        http = httplib.HTTPSConnection(self.url)
-        http.request("POST", uri, body=xml, headers={
-            "Host": "localhost",
-            "Content-Type": "text/xml; charset=UTF-8",
-        })
-        response = http.getresponse()
-        xmlresponse = response.read()
-        self.log.debug(minidom.parseString(xmlresponse).toprettyxml(indent='  '))
-        return xmlresponse
+    @property
+    def headers(self):
+        """default heders to be sent on http requests"""
+        return { "Content-Type": "text/xml; charset=UTF-8" }
 
-    def authorize(self, **kwargs):
-        """All arguments supplied to this method must be keyword arguments.
+    def _get_url(self, service):
+        """Return the full URL for a given service
+        """
+        return urlparse.urljoin(self.url, service)
+
+    def _get_request(self, url, body, headers=None):
+        """Return an instance of HTTPRequest, with POST as the hardcoded
+        HTTP method and optionally custom headers.
+        The payload is in 'body' variable and HTTPRequest automatically
+        encodes it to utf-8 is it's not already.
+        """
+        return HTTPRequest(url=url, method='POST',
+                           body=body, headers=headers and headers or self.headers)
+
+    def _request(self, callback, xml, query=False):
+        """Actually send the HTTP request, note that we don't return anything here
+        since it's an asynchronous request.
+        """
+        url = self._get_url(query and self.query_service or self.transaction_service)
+        logging.debug(minidom.parseString(xml.encode('utf-8')).toprettyxml(indent='  '))
+        self.http_client.fetch(self._get_request(url, xml), callback)
+
+    def _authorize_callback(self, response):
+        """Callback that's called when we get a response from braspag.
+        Once called, we wrap the response in the needed response class,
+        in our case CreditCardAuthorizationResponse() and call the
+        user callback with it as an argument.
+        """
+        logging.debug(u'response: {0}'.format(response.body))
+        self.user_authorize_callback(CreditCardAuthorizationResponse(response.body))
+
+    @classmethod
+    def authorize(klass, user_callback, merchant_id, homologation=False, **kwargs):
+        """Pre-authorize a payment. This is a class method that instantiates a
+        BraspagRequest class with whatever (merchant_id, homologation) are passed
+        in.
+        The user _must_ supply a valid callback as the user_callback argument that'll
+        be called when we get a response from the Braspag API.
+
+        The arguments to the Braspag authorize API call must be passed as keyword
+        arguments and are:
 
         :arg order_id: Order id. It will be used to indentify the
                        order later in Braspag.
         :arg customer_id: Must be user's CPF/CNPJ.
         :arg customer_name: User's full name.
         :arg customer_email: User's email address.
-
-        :returns: :class:`~braspag.BraspagResponse`
+        :arg transactions: List of transactions to pre-authorize.
         """
-        transactions = []
-        for transaction in kwargs['transactions']:
-            transactions.append(BraspagTransaction(**transaction))
+        required_keys = ['order_id', 'customer_id', 'customer_name', 'customer_email', 'transactions']
+        assert all([kwargs.has_key(k) for k in required_keys]), 'authorize requires all the variables: {0}'.format(required_keys)
+        assert callable(user_callback), 'You must pass in a method or function as first argument'
 
-        xml_request = self._render_template('authorize.xml', {
-            'request_id': kwargs['request_id'],
-            'order_id': kwargs['order_id'],
-            'customer_id': kwargs['customer_id'],
-            'customer_name': kwargs['customer_name'],
-            'customer_email': kwargs['customer_email'],
-            'transactions': transactions,
-        })
-        response = self._request(spaceless(xml_request))
-        return CreditCardAuthorizationResponse(response)
+        instance = klass(merchant_id, homologation=homologation)
+        instance.user_authorize_callback = user_callback
 
-    def _base_transaction(self, **kwargs):
-        assert kwargs.get('type') in ('Refund', 'Void', 'Capture')
+        kwargs['transactions'] = [BraspagTransaction(**t) for t in kwargs['transactions']]
+        kwargs.update(transaction_type=TransactionType.PRE_AUTHORIZATION)
+
+        instance._request(instance._authorize_callback,
+                      instance._render_template('authorize.xml', kwargs))
+
+    def _refund_callback(self, response):
+        """Local callback that's called when we get a response from a refund
+        Braspag API call.
+        This callback just instantiate a CreditCardRefundResponse with the
+        response it received from Braspag and call the user's callback with
+        it as the only argument.
+        """
+        logging.debug(u'response: {0}'.format(response.body))
+        self.user_refund_callback(CreditCardRefundResponse(response.body))
+
+    @classmethod
+    def refund(klass, user_callback, merchant_id, homologation=False, **kwargs):
+        """Refund a payment. This is a class method that instantiates a
+        BraspagRequest class with whatever (merchant_id, homologation) are passed
+        in.
+        The user _must_ supply a valid callback as the user_callback argument that'll
+        be called when we get a response from the Braspag API.
+
+        The arguments to the Braspag refund API call must be passed as keyword
+        arguments and are:
+
+        :arg transation_id: Braspag's transaction ID.
+        :arg amount: The amount that should be refunded, must be <= the total
+                     transaction amount.
+        """
         assert is_valid_guid(kwargs.get('transaction_id')), 'Transaction ID invalido'
+        assert isinstance(kwargs.get('amount', None), float), 'Amount is required and must be float'
+        assert callable(user_callback), 'You must pass in a method or function as first argument'
 
-        data_dict = {
-            'amount': kwargs.get('amount'),
-            'type': kwargs.get('type'),
-            'transaction_id': kwargs.get('transaction_id'),
-            'request_id': kwargs.get('request_id'),
-        }
-        xml_request = self._render_template('base.xml', data_dict)
-        xml_response = self._request(xml_request)
-
-        if kwargs.get('type') == 'Void':
-            return CreditCardCancelResponse(xml_response)
-        elif kwargs.get('type') == 'Refund':
-            return CreditCardRefundResponse(xml_response)
-        else:
-            return CreditCardCaptureResponse(xml_response)
-
-
-    def void(self, **kwargs):
-        """Void the given amount for the given transaction_id.
-
-        This method should be used to return funds to customers
-        for transactions that happened within less than 23h and
-        59 minutes ago. For other transactions use
-        :meth:`~braspag.BraspagRequest.refund`.
-
-        If the amount is 0 (zero) the full transaction will be
-        voided.
-
-        :returns: :class:`~braspag.BraspagResponse`
-
-        """
-        kwargs['type'] = 'Void'
-        kwargs['amount'] = kwargs.get('amount', 0)
-        return self._base_transaction(**kwargs)
-
-    def refund(self, **kwargs):
-        """Refund the given amount for the given transaction_id.
-
-        This method should be used to return funds to customers
-        for transactions that happened at least 24 hours ago.
-        For transactions that happended within 24 hours use
-        :meth:`~braspag.BraspagRequest.void`.
-
-        If the amount is 0 (zero) the full transaction will be
-        refunded.
-
-        :returns: :class:`~braspag.BraspagResponse`
-
-        """
+        instance = klass(merchant_id, homologation=homologation)
+        instance.user_refund_callback = user_callback
         kwargs['type'] = 'Refund'
-        kwargs['amount'] = kwargs.get('amount', 0)
-        return self._base_transaction(**kwargs)
+        instance._request(instance._refund_callback, instance._render_template('base.xml', kwargs))
 
-    def capture(self, **kwargs):
-        """Capture the given `amount` from the given transaction_id.
-
-        This method should only be called after pre-authorizing the
-        transaction by calling :meth:`~braspag.BraspagRequest.authorize`
-        with `transaction_types` 1 or 3.
-
-        :returns: :class:`~braspag.BraspagResponse`
-
+    def _capture_callback(self, response):
+        """Local callback that's called when we get a response from a capture
+        Braspag API call.
+        This callback just instantiate a CreditCardCaptureResponse with the
+        response it received from Braspag and call the user's callback with
+        it as the only argument.
         """
+        logging.debug(u'capture response: {0}'.format(response.body))
+        self.user_capture_callback(CreditCardCaptureResponse(response.body))
+
+    @classmethod
+    def capture(klass, user_callback, merchant_id, homologation=False, **kwargs):
+        """Capture a give amount from a previously-authorized transaction.
+
+        As with all the currently implemented class-based methods, the user
+        _must_ supply a valid callback as the user_callback argument that'll
+        be called when we get a response from the Braspag API.
+
+        The arguments to be sent to the Braspag capture API must be passed
+        as keyword arguments and are:
+
+        :arg transaction_id: Previously authorized transaction ID.
+        :arg amount: Amount to be captured, in float.
+        """
+        assert is_valid_guid(kwargs.get('transaction_id')), 'Transaction ID invalido'
+        assert isinstance(kwargs.get('amount', None), float), 'Amount is required and must be float'
+        assert callable(user_callback), 'You must pass in a method or function as first argument'
+
+        instance = klass(merchant_id, homologation=homologation)
+        instance.user_capture_callback = user_callback
         kwargs['type'] = 'Capture'
-        return self._base_transaction(**kwargs)
+        instance._request(instance._capture_callback, instance._render_template('base.xml', kwargs))
+
+    def _void_callback(self, response):
+        """Local callback that's called when we get a response from a void
+        Braspag API call.
+        This callback instantiates a CreditCardCancelResponse with the
+        response it received from Braspag and call the user's callback with
+        it as the only argument.
+        """
+        logging.debug(u'response: {0}'.format(response.body))
+        self.user_void_callback(CreditCardCancelResponse(response.body))
+
+    @classmethod
+    def void(klass, user_callback, merchant_id, homologation=False, **kwargs):
+        """Void/cancel a transaction.
+
+        As with all the currently implemented class-based methods, the user
+        _must_ supply a valid callback as the user_callback argument that'll
+        be called when we get a response from the Braspag API.
+
+        The arguments to be sent to the Braspag capture API must be passed
+        as keyword arguments and are:
+
+        :arg transaction_id: ID of the transaction to be voided.
+        :arg amount: Amount of the transaction, in float.
+        """
+        assert is_valid_guid(kwargs.get('transaction_id')), 'Transaction ID invalido'
+        assert isinstance(kwargs.get('amount', None), float), 'Amount is required and must be float'
+        assert callable(user_callback), 'You must pass in a method or function as first argument'
+
+        instance = klass(merchant_id, homologation=homologation)
+        instance.user_void_callback = user_callback
+        kwargs['type'] = 'Void'
+        instance._request(instance._void_callback, instance._render_template('base.xml', kwargs))
+
+    def _get_order_id_by_transaction_id_callback(self, response):
+        """Local callback that's called when we get a response from a query
+        Braspag API call.
+        This callback instantiates a BraspagOrderIdResponse with the
+        response it received from Braspag and call the user's callback with
+        it as the only argument.
+        """
+        logging.debug(u'response: {0}'.format(response.body))
+        self.get_order_id_by_transaction_id_callback(BraspagOrderIdResponse(response.body))
+
+    @classmethod
+    def get_order_id_by_transaction_id(klass, user_callback, merchant_id, homologation=False, **kwargs):
+        """Get an order ID based on the received transaction ID.
+
+        As with all the currently implemented class-based methods, the user
+        _must_ supply a valid callback as the user_callback argument that'll
+        be called when we get a response from the Braspag API.
+
+        The arguments to be sent to the Braspag capture API must be passed
+        as keyword arguments and are:
+
+        :arg transaction_id: The id of the transaction.
+        """
+        assert is_valid_guid(kwargs.get('transaction_id')), 'Invalid Transaction ID'
+        assert callable(user_callback), 'You must pass in a method or function as first argument'
+
+        instance = klass(merchant_id, homologation=homologation)
+        instance.get_order_id_by_transaction_id_callback = user_callback
+
+        context = {
+            'transaction_id': kwargs.get('transaction_id'),
+            'request_id': kwargs.get('request_id')
+        }
+
+        instance._request(instance._get_order_id_by_transaction_id_callback,
+                          instance._render_template('get_braspag_order_id.xml',
+                                                    context), query=True)
+
+    def _get_customer_data_callback(self, response):
+        """Local callback that's called when we get a response from a query
+        Braspag API call.
+        This callback instantiates a CustomerDataResponse with the
+        response it received from Braspag and call the user's callback with
+        it as the only argument.
+        """
+        logging.debug('response: {0}'.format(response.body))
+        self.get_customer_data_callback(CustomerDataResponse(response.body))
+
+    @classmethod
+    def get_customer_data(klass, user_callback, merchant_id, homologation=False, **kwargs):
+        """Get the data from the customer that issued a transaction.
+
+        As with all the currently implemented class-based methods, the user
+        _must_ supply a valid callback as the user_callback argument that'll
+        be called when we get a response from the Braspag API.
+
+        The arguments to be sent to the Braspag capture API must be passed
+        as keyword arguments and are:
+
+        :arg order_id: The ID of the order the customer has placed.
+        """
+        assert is_valid_guid(kwargs.get('order_id')), 'Invalid Order ID'
+        assert callable(user_callback), 'You must pass in a method or function as first argument'
+
+        instance = klass(merchant_id, homologation=homologation)
+        instance.get_customer_data_callback = user_callback
+
+        context = {
+            'order_id': kwargs.get('order_id'),
+            'request_id': kwargs.get('request_id')
+        }
+
+        instance._request(instance._get_customer_data_callback,
+                          instance._render_template('get_customer_data.xml',
+                                                    context), query=True)
+
+    def _get_transaction_data_callback(self, response):
+        """Local callback that's called when we get a response from a query
+        Braspag API call.
+        This callback instantiates a TransactionDataResponse with the
+        response it received from Braspag and call the user's callback with
+        it as the only argument.
+        """
+        logging.debug('response: {0}'.format(response.body))
+        self.get_transaction_data_callback(TransactionDataResponse(response.body))
+
+    @classmethod
+    def get_transaction_data(klass, user_callback, merchant_id, homologation=False, **kwargs):
+        """Get the data from a transaction.
+
+        As with all the currently implemented class-based methods, the user
+        _must_ supply a valid callback as the user_callback argument that'll
+        be called when we get a response from the Braspag API.
+
+        The arguments to be sent to the Braspag capture API must be passed
+        as keyword arguments and are:
+
+        :arg transaction_id: The id of the transaction
+        """
+        assert is_valid_guid(kwargs.get('transaction_id')), 'Invalid Order ID'
+
+        instance = klass(merchant_id, homologation=homologation)
+        instance.get_transaction_data_callback = user_callback
+
+        context = {
+            'transaction_id': kwargs.get('transaction_id'),
+            'request_id': kwargs.get('request_id')
+        }
+
+        instance._request(instance._get_transaction_data_callback,
+                          instance._render_template('get_transaction_data.xml',
+                                                    context), query=True)
+
+    def _get_order_data_callback(self, response):
+        """Local callback that's called when we get a response from a query
+        Braspag API call.
+        This callback instantiates a BraspagOrderDataResponse with the
+        response it received from Braspag and call the user's callback with
+        it as the only argument.
+        """
+        logging.debug('response: {0}'.format(response.body))
+        self.get_order_data_callback(BraspagOrderDataResponse(response.body))
+
+    @classmethod
+    def get_order_data(klass, user_callback, merchant_id, homologation=False, **kwargs):
+        """Get the data from an order.
+
+        As with all the currently implemented class-based methods, the user
+        _must_ supply a valid callback as the user_callback argument that'll
+        be called when we get a response from the Braspag API.
+
+        The arguments to be sent to the Braspag capture API must be passed
+        as keyword arguments and are:
+
+        :arg order_id: The id of the order
+        :arg request_id: The request_id used to generate the order, optional.
+        """
+        assert is_valid_guid(kwargs.get('order_id')), 'Invalid Order ID'
+        assert callable(user_callback), 'You must pass in a method or function as first argument'
+
+        instance = klass(merchant_id, homologation=homologation)
+        instance.get_order_data_callback = user_callback
+
+        context = {
+            'order_id': kwargs.get('order_id'),
+            'request_id': kwargs.get('request_id')
+        }
+
+        instance._request(instance._get_order_data_callback,
+                          instance._render_template('get_braspag_order_data.xml',
+                                                    context), query=True)
 
     def _render_template(self, template_name, data_dict):
-        if self.merchant_id:
-            data_dict['merchant_id'] = self.merchant_id
+        """Helper to render a template.
+        """
+        data_dict['merchant_id'] = self.merchant_id
+
+        if data_dict.has_key('amount'):
+            data_dict.update(amount=convert_amount(data_dict['amount']))
 
         if not data_dict.get('request_id'):
             data_dict['request_id'] = unicode(uuid.uuid4())
 
         template = self.jinja_env.get_template(template_name)
         xml_request = template.render(data_dict)
-        self.log.debug(xml_request)
-        return xml_request
+        #self.log.debug(xml_request)
+        return spaceless(xml_request)
 
-    def issue_billet(self, **kwargs):
-        """All arguments supplied to this method must be keyword arguments.
+    @method_must_be_redesigned
+    def issue_billet(self, **kwargs):  # pragma: no cover
+        """DEPRECATED -- must be redesigned to work asynchronously.
+
+        All arguments supplied to this method must be keyword arguments.
 
         :arg order_id: Order id. It will be used to indentify the
                        order later in Braspag.
@@ -207,8 +453,11 @@ class BraspagRequest(object):
         xml_request = self._render_template('authorize_billet.xml', kwargs)
         return BilletResponse(self._request(spaceless(xml_request)))
 
-    def get_billet_data(self, **kwargs):
-        """All arguments supplied to this method must be keyword arguments.
+    @method_must_be_redesigned
+    def get_billet_data(self, **kwargs):  # pragma: no cover
+        """DEPRECATED -- must be redesigned to work asynchronously.
+
+        All arguments supplied to this method must be keyword arguments.
 
         :arg transaction_id: The id of the transaction generated previously by
         *issue_billet*
@@ -225,83 +474,6 @@ class BraspagRequest(object):
         xml_request = self._render_template('get_billet_data.xml', context)
         xml_response = self._request(spaceless(xml_request), query=True)
         return BilletDataResponse(xml_response)
-
-    def get_order_id_by_transaction_id(self, **kwargs):
-        """All arguments supplied to this method must be keyword arguments.
-
-        :arg transaction_id: The id of the transaction generated previously by
-        *issue_billet*
-
-        :returns: :class:`~braspag.BraspagOrderIdResponse`
-
-        """
-        assert is_valid_guid(kwargs.get('transaction_id')), 'Invalid Transaction ID'
-        
-        context = {
-            'transaction_id': kwargs.get('transaction_id'),
-            'request_id': kwargs.get('request_id')
-        }
-        
-        xml_request = self._render_template('get_braspag_order_id.xml', context)
-        xml_response = self._request(spaceless(xml_request), query=True)
-        return BraspagOrderIdResponse(xml_response)
-
-    def get_order_data(self, **kwargs):
-        """All arguments supplied to this method must be keyword arguments.
-
-        :arg order_id: The id of the order generated previously by
-        *authorize*
-
-        :returns: :class:`~braspag.BraspagOrderDataResponse`
-
-        """
-        assert is_valid_guid(kwargs.get('order_id')), 'Invalid Order ID'
-        
-        context = {
-            'order_id': kwargs.get('order_id'),
-            'request_id': kwargs.get('request_id')
-        }
-        
-        xml_request = self._render_template('get_braspag_order_data.xml', context)
-        xml_response = self._request(spaceless(xml_request), query=True)
-        return BraspagOrderDataResponse(xml_response)
-
-    def get_customer_data(self, **kwargs):
-        """All arguments supplied to this method must be keyword arguments.
-
-        :arg order_id: The id of the order generated previously by *get_order_id*
-        passing trasaction_id as argument
-
-        :returns: :class:`~braspag.CustomerDataResponse`
-
-        """
-        assert is_valid_guid(kwargs.get('order_id')), 'Invalid Order ID'
-
-        context = {
-            'order_id': kwargs.get('order_id'),
-            'request_id': kwargs.get('request_id')
-        }
-        xml_request = self._render_template('get_customer_data.xml', context)
-        xml_response = self._request(spaceless(xml_request), query=True)
-        return CustomerDataResponse(xml_response)
-
-    def get_transaction_data(self, **kwargs):
-        """All arguments supplied to this method must be keyword arguments.
-
-        :arg transaction_id: The id of the transaction
-
-        :returns: :class:`~braspag.TransactionDataResponse`
-
-        """
-        assert is_valid_guid(kwargs.get('transaction_id')), 'Invalid Order ID'
-
-        context = {
-            'transaction_id': kwargs.get('transaction_id'),
-            'request_id': kwargs.get('request_id')
-        }
-        xml_request = self._render_template('get_transaction_data.xml', context)
-        xml_response = self._request(spaceless(xml_request), query=True)
-        return TransactionDataResponse(xml_response)
 
 
 class BraspagTransaction(object):
@@ -347,7 +519,7 @@ class BraspagTransaction(object):
             assert all(kwargs.has_key(key) for key in card_keys), \
                 (u'Transações com Cartão de Crédito exigem os '
                  u'parametros: {0}'.format(', '.join(card_keys)))
-        
+
         if not kwargs.get('number_of_payments'):
             kwargs['number_of_payments'] = 1
 
@@ -372,8 +544,7 @@ class BraspagTransaction(object):
             kwargs['country'] = 'BRA'
 
         if not kwargs.get('transaction_type'):
-            # 2 = captura automatica
-            kwargs['transaction_type'] = 2
+            kwargs['transaction_type'] = TransactionType.PRE_AUTHORIZATION
 
         if kwargs.get('save_card', False):
             kwargs['save_card'] = 'true'
@@ -394,4 +565,7 @@ class BraspagTransaction(object):
         for attr in ('amount', 'card_holder', 'card_number', 'card_security_code', 'card_token',
                      'card_exp_date', 'number_of_payments', 'currency', 'country', 'payment_plan',
                      'payment_method', 'soft_descriptor', 'save_card', 'transaction_type'):
+            if attr == 'amount':
+                assert isinstance(kwargs[attr], float), 'amount must be float'
+                kwargs.update(amount=convert_amount(kwargs[attr]))
             setattr(self, attr, kwargs[attr])
