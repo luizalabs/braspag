@@ -4,17 +4,20 @@ from __future__ import absolute_import
 import re
 import codecs
 
-from mock import MagicMock
 from tornado.testing import AsyncTestCase
-
 from braspag import BraspagRequest
+
+
+MERCHANT_ID = u'F9B44052-4AE0-E311-9406-0026B939D54B'
+HOMOLOGATION = True
+ASYNC_TIMEOUT = 20  # timeout for async operations, in seconds
 
 
 class BraspagTestCase(AsyncTestCase):
 
     def setUp(self):
         super(BraspagTestCase, self).setUp()
-        self.merchant_id = u'F9B44052-4AE0-E311-9406-0026B939D54B'
+        self.braspag = BraspagRequest(MERCHANT_ID, homologation=HOMOLOGATION)
 
 
 class RegexpMatcher(object):
