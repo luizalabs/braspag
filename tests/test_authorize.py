@@ -20,7 +20,7 @@ class AuthorizeTest(BraspagTestCase):
                                      'customer_name': u'José da Silva',
                                      'customer_email': 'jose123@dasilva.com.br',
                                      'transactions': [{
-                                         'amount': float(1000),
+                                         'amount': 100000,
                                          'card_holder': 'Jose da Silva',
                                          'card_number': '0000000000000001',
                                          'card_security_code': '123',
@@ -29,7 +29,7 @@ class AuthorizeTest(BraspagTestCase):
                                          'payment_method': PAYMENT_METHODS['Simulated']['BRL'],
                                          'soft_descriptor': u'Sax Alto Chinês',
                                      },{
-                                         'amount': float(1900.99),
+                                         'amount': 190099,
                                          'card_holder': u'João Silveira',
                                          'card_number': '9000000000000001',
                                          'card_security_code': '432',
@@ -42,14 +42,14 @@ class AuthorizeTest(BraspagTestCase):
         assert response.success == True
         assert response.order_id == u'2cf84e51-c45b-45d9-9f64-554a6e088668'
         assert response.correlation_id == u'782a56e2-2dae-11e2-b3ee-080027d29772'
-        assert response.transactions[0]['amount'] == float('1000.00')
+        assert response.transactions[0]['amount'] == 100000
         assert response.transactions[0]['payment_method'] == 997
         assert response.transactions[0]['return_code'] == '4'
         assert response.transactions[0]['return_message'] == u'Operation Successful'
         assert response.transactions[0]['status'] == 1  # TODO: transformar em constante, tabela 13.10.1 do manual do pagador
         assert response.transactions[0]['status_message'] == 'Authorized'
 
-        assert response.transactions[1]['amount'] == float('1900.99')
+        assert response.transactions[1]['amount'] == 190099
         assert response.transactions[1]['payment_method'] == 997
         assert response.transactions[1]['return_code'] == '4'
         assert response.transactions[1]['return_message'] == u'Operation Successful'
@@ -66,7 +66,7 @@ class AuthorizeTest(BraspagTestCase):
                                         'customer_name': u'José da Silva',
                                         'customer_email': 'jose123@dasilva.com.br',
                                         'transactions': [{
-                                            'amount': float(1000),
+                                            'amount': 1000,
                                             'card_holder': 'Jose da Silva',
                                             'card_number': '0000000000000001',
                                             'card_security_code': '123',

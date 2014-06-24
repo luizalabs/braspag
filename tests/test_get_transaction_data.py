@@ -19,7 +19,7 @@ class GetTransactionDataTest(BraspagTestCase):
                                      'customer_name': u'José da Silva',
                                      'customer_email': 'jose123@dasilva.com.br',
                                      'transactions': [{
-                                         'amount': float(1000),
+                                         'amount': 100000,
                                          'card_holder': 'Jose da Silva',
                                          'card_number': '0000000000000001',
                                          'card_security_code': '123',
@@ -30,7 +30,7 @@ class GetTransactionDataTest(BraspagTestCase):
                                      }],
                                  })
         assert response.success == True
-        assert response.transactions[0]['amount'] == float('1000.00')
+        assert response.transactions[0]['amount'] == 100000
         assert response.order_id == u'2cf84e51-c45b-45d9-9f64-554a6e088668'
         assert response.correlation_id == u'782a56e2-2dae-11e2-b3ee-080027d29772'
         assert response.transactions[0]['payment_method'] == 997

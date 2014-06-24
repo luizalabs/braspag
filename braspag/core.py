@@ -11,7 +11,6 @@ import jinja2
 
 from .utils import spaceless
 from .utils import is_valid_guid
-from .utils import convert_amount
 from .utils import method_must_be_redesigned
 from .exceptions import BraspagException
 from .response import CreditCardAuthorizationResponse
@@ -128,7 +127,7 @@ class BraspagRequest(object):
                      transaction amount.
         """
         assert is_valid_guid(kwargs.get('transaction_id')), 'Transaction ID invalido'
-        assert isinstance(kwargs.get('amount', None), float), 'Amount is required and must be float'
+        assert isinstance(kwargs.get('amount', None), int), 'Amount is required and must be int'
 
         kwargs['type'] = 'Refund'
         response = yield self._request(self._render_template('base.xml', kwargs))
@@ -142,10 +141,10 @@ class BraspagRequest(object):
         as keyword arguments and are:
 
         :arg transaction_id: Previously authorized transaction ID.
-        :arg amount: Amount to be captured, in float.
+        :arg amount: Amount to be captured, in int.
         """
         assert is_valid_guid(kwargs.get('transaction_id')), 'Transaction ID invalido'
-        assert isinstance(kwargs.get('amount', None), float), 'Amount is required and must be float'
+        assert isinstance(kwargs.get('amount', None), int), 'Amount is required and must be int'
 
         kwargs['type'] = 'Capture'
         response = yield self._request(self._render_template('base.xml', kwargs))
@@ -159,10 +158,10 @@ class BraspagRequest(object):
         as keyword arguments and are:
 
         :arg transaction_id: ID of the transaction to be voided.
-        :arg amount: Amount of the transaction, in float.
+        :arg amount: Amount of the transaction, in int.
         """
         assert is_valid_guid(kwargs.get('transaction_id')), 'Transaction ID invalido'
-        assert isinstance(kwargs.get('amount', None), float), 'Amount is required and must be float'
+        assert isinstance(kwargs.get('amount', None), int), 'Amount is required and must be int'
 
         kwargs['type'] = 'Void'
         response = yield self._request(self._render_template('base.xml', kwargs))
@@ -253,9 +252,6 @@ class BraspagRequest(object):
         """Render a template.
         """
         data_dict['merchant_id'] = self.merchant_id
-
-        if data_dict.has_key('amount'):
-            data_dict.update(amount=convert_amount(data_dict['amount']))
 
         if not data_dict.get('request_id'):
             data_dict['request_id'] = unicode(uuid.uuid4())
@@ -420,6 +416,5 @@ class BraspagTransaction(object):
                      'card_exp_date', 'number_of_payments', 'currency', 'country', 'payment_plan',
                      'payment_method', 'soft_descriptor', 'save_card', 'transaction_type'):
             if attr == 'amount':
-                assert isinstance(kwargs[attr], float), 'amount must be float'
-                kwargs.update(amount=convert_amount(kwargs[attr]))
+                assert isinstance(kwargs[attr], int), 'amount must be int'
             setattr(self, attr, kwargs[attr])

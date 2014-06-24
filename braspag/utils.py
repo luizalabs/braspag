@@ -80,13 +80,6 @@ def is_valid_guid(guid):
 
     return True
 
-def convert_amount(float_value):
-    """Helper to ensure we convert the amount in a single method.
-    _Always_ use this method to convert the amount value from the
-    float type to integer.
-    """
-    return int(float_value*100)
-
 def method_must_be_redesigned(func):
     """Decorator to mark functions that must be redesigned to work
     asynchronously before being used.
