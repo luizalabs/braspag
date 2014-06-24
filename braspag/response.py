@@ -17,7 +17,7 @@ class PagadorResponse(object):
 
         self._fields['transaction_id'] = 'BraspagTransactionId'
         self._fields['correlation_id'] = 'CorrelationId'
-        self._fields['amount'] = ('Amount', to_float)
+        self._fields['amount'] = ('Amount', to_int)
         self._fields['success'] = ('Success', to_bool)
         self.errors = []
 
@@ -87,7 +87,7 @@ class PagadorDictResponse(object):
                 'braspag_transaction_id': transaction_items.get('BraspagTransactionId'),
                 'acquirer_transaction_id': transaction_items.get('AcquirerTransactionId'),
                 'authorization_code': transaction_items.get('AuthorizationCode'),
-                'amount': to_float(transaction_items.get('Amount')),
+                'amount': to_int(transaction_items.get('Amount')),
                 'status': status,
                 'status_message': self.STATUS[status],
                 'proof_of_sale': transaction_items.get('ProofOfSale'),
@@ -276,7 +276,7 @@ class BilletDataResponse(BilletResponse):  # pragma: no cover
         self._fields['document_date'] = ('DocumentDate', to_date)
         self._fields['payment_date'] = ('PaymentDate', to_date)
         self._fields['type'] = 'BoletoType'
-        self._fields['paid_amount'] = ('PaidAmount', to_float)
+        self._fields['paid_amount'] = ('PaidAmount', to_int)
         self._fields['bank_number'] = 'BankNumber'
         self._fields['agency'] = 'Agency'
         self._fields['account'] = 'Account'
