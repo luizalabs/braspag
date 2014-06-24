@@ -1,71 +1,13 @@
 
-import xml.parsers.expat
 import xml.etree.ElementTree as ET
 
-from datetime import datetime
 from xml.etree.ElementTree import Element
+from utils import to_float
+from utils import to_bool
+from utils import to_int
+from utils import to_date
+from utils import to_unicode
 import xmltodict
-
-
-def unescape(s):
-    """Copied from http://wiki.python.org/moin/EscapingXml"""
-
-    want_unicode = False
-    if isinstance(s, unicode):
-        s = s.encode("utf-8")
-        want_unicode = True
-
-    # the rest of this assumes that `s` is UTF-8
-    list = []
-
-    # create and initialize a parser object
-    p = xml.parsers.expat.ParserCreate("utf-8")
-    p.buffer_text = True
-    p.returns_unicode = want_unicode
-    p.CharacterDataHandler = list.append
-
-    # parse the data wrapped in a dummy element
-    # (needed so the "document" is well-formed)
-    p.Parse("<e>", 0)
-    p.Parse(s, 0)
-    p.Parse("</e>", 1)
-
-    # join the extracted strings and return
-    es = ""
-    if want_unicode:
-        es = u""
-    return es.join(list)
-
-
-def to_bool(value):
-    value = value.lower()
-    if value == 'true':
-        return True
-    elif value == 'false':
-        return False
-
-
-def to_float(value):
-    return float(int(value)/100.00)
-
-
-def to_unicode(value):
-    if isinstance(value, str):
-        value = value.decode('utf-8')
-
-    return unescape(value)
-
-
-def to_date(value):
-    return datetime.strptime(value, '%m/%d/%Y %H:%M:%S %p')
-
-
-def to_int(value):
-    if value.isdigit():
-        return int(value)
-    else:
-        #some BoletoNumber came with - e.g: 10027-1
-        return int(value.replace('-',''))
 
 
 class PagadorResponse(object):
@@ -305,7 +247,7 @@ class BraspagOrderDataResponse(PagadorDictResponse):
             self.format_errors(error_items)
 
 
-class BilletResponse(PagadorResponse):
+class BilletResponse(PagadorResponse):  # pragma: no cover
 
     def __init__(self, xml):
         self._fields = getattr(self, '_fields', {})
@@ -325,7 +267,7 @@ class BilletResponse(PagadorResponse):
         super(BilletResponse, self).__init__(xml)
 
 
-class BilletDataResponse(BilletResponse):
+class BilletDataResponse(BilletResponse):  # pragma: no cover
 
     def __init__(self, xml):
         self._fields = getattr(self, '_fields', {})

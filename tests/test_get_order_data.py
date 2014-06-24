@@ -3,17 +3,16 @@
 from __future__ import absolute_import
 
 from braspag.consts import PAYMENT_METHODS
-from braspag import BraspagRequest
 from .base import BraspagTestCase
+from .base import ASYNC_TIMEOUT
+from tornado.testing import gen_test
 
 
 class GetTransactionDataTest(BraspagTestCase):
 
+    @gen_test(timeout=ASYNC_TIMEOUT)
     def test_get_transaction_data(self):
-        BraspagRequest.authorize(self._authorize_callback,
-                                 self.merchant_id,
-                                 homologation=True,
-                                 **{
+        response = yield self.braspag.authorize(**{
                                      'request_id': '782a56e2-2dae-11e2-b3ee-080027d29772',
                                      'order_id': '2cf84e51-c45b-45d9-9f64-554a6e088668',
                                      'customer_id': '12345678900',
@@ -29,9 +28,7 @@ class GetTransactionDataTest(BraspagTestCase):
                                          'payment_method': PAYMENT_METHODS['Simulated']['BRL'],
                                      }],
                                  })
-        self.wait(timeout=10)
 
-    def _authorize_callback(self, response):
         assert response.success == True
         assert response.transactions[0]['amount'] == float('1000.00')
         assert response.order_id == u'2cf84e51-c45b-45d9-9f64-554a6e088668'
@@ -42,18 +39,11 @@ class GetTransactionDataTest(BraspagTestCase):
         assert response.transactions[0]['status'] == 1  # TODO: transformar em constante, tabela 13.10.1 do manual do pagador
         assert response.transactions[0]['status_message'] == 'Authorized'
 
-        BraspagRequest.get_order_data(self._get_order_data_callback,
-                                                      self.merchant_id,
-                                                      homologation=True,
-                                                      **{
-                                                          'order_id': response.braspag_order_id
-                                                      })
+        response = yield self.braspag.get_order_data(order_id=response.braspag_order_id)
 
-    def _get_order_data_callback(self, response):
         assert response.success == True
         assert response.transactions[0]['amount'] == float('1000.00')
         assert response.transactions[0]['payment_method'] == 997
         assert response.transactions[0]['transaction_type'] == 1
         assert response.transactions[0]['status'] == 2
         assert response.transactions[0]['status_message'] == 'Authorized'
-        self.stop()
