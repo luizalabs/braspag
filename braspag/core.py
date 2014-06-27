@@ -13,6 +13,7 @@ from .utils import spaceless
 from .utils import is_valid_guid
 from .utils import method_must_be_redesigned
 from .exceptions import BraspagException
+from .exceptions import HTTPTimeoutError
 from .response import CreditCardAuthorizationResponse
 from .response import BilletResponse
 from .response import BilletDataResponse
@@ -26,6 +27,7 @@ from .response import BraspagOrderDataResponse
 from xml.dom import minidom
 
 from tornado.httpclient import HTTPRequest
+from tornado.httpclient import HTTPError
 from tornado import httpclient
 from tornado import gen
 
@@ -44,7 +46,7 @@ class BraspagRequest(object):
     Implements Braspag Pagador API (manual version 1.9).
     """
 
-    def __init__(self, merchant_id=None, homologation=False):
+    def __init__(self, merchant_id=None, homologation=False, request_timeout=10):
         if homologation:
             self.url = 'https://homologacao.pagador.com.br'
         else:
@@ -64,9 +66,12 @@ class BraspagRequest(object):
         self.query_service = '/services/pagadorQuery.asmx'
         self.transaction_service = '/webservice/pagadorTransaction.asmx'
 
+        # timeout
+        self.request_timeout = request_timeout
+
     @property
     def headers(self):
-        """default heders to be sent on http requests"""
+        """default headers to be sent on http requests"""
         return { "Content-Type": "text/xml; charset=UTF-8" }
 
     def _get_url(self, service):
@@ -79,8 +84,13 @@ class BraspagRequest(object):
         HTTP method and optionally custom headers.
         The body is automatically encoded to utf-8 by HTTPRequest if it's not already.
         """
-        return HTTPRequest(url=url, method='POST',
-                           body=body, headers=headers and headers or self.headers)
+        return HTTPRequest(
+            url=url,
+            method='POST',
+            body=body,
+            request_timeout=self.request_timeout,
+            headers=(headers and headers or self.headers)
+        )
 
     @gen.coroutine
     def _request(self, xml, query=False):
@@ -88,7 +98,10 @@ class BraspagRequest(object):
         """
         url = self._get_url(query and self.query_service or self.transaction_service)
         logging.debug('Request: %s' % minidom.parseString(xml.encode('utf-8')).toprettyxml(indent='  '))
-        response = yield self.http_client.fetch(self._get_request(url, xml))
+        try:
+            response = yield self.http_client.fetch(self._get_request(url, xml))
+        except HTTPError as e:
+            raise e.code == 599 and HTTPTimeoutError(e.code, e.message) or HTTPError(e.code, e.message)
         logging.debug('Response: %s' % response)
         raise gen.Return(response)
 
