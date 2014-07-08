@@ -93,6 +93,9 @@ class PagadorDictResponse(object):
                 'proof_of_sale': transaction_items.get('ProofOfSale'),
             }
 
+            if transaction_items.has_key('MaskedCreditCardNumber'):
+                data['masked_credit_card_number'] = transaction_items.get('MaskedCreditCardNumber')
+
             if transaction_items.has_key('ReturnCode'):
                 data['return_code'] = transaction_items.get('ReturnCode')
 
