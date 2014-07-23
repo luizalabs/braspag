@@ -1,0 +1,20 @@
+{% extends 'base.xml' %}
+{% block body_content %}
+<SaveCreditCard xmlns="http://www.cartaoprotegido.com.br/WebService/">
+  <saveCreditCardRequestWS>
+    <MerchantKey>{{ merchant_id }}</MerchantKey>
+    <CustomerIdentification>{{ customer_identification }}</CustomerIdentification>
+    <CustomerName>{{ customer_name }}</CustomerName>
+    <CardHolder>{{ card_holder  }}</CardHolder>
+    <CardNumber>{{ card_number }}</CardNumber>
+    <CardExpiration>{{ card_expiration }}</CardExpiration>
+    <JustClickAlias>{{ just_click_alias }}</JustClickAlias>
+    <DataCollection>
+      {# <ExtraData>
+        <Name></Name>
+        <Value></Value>
+      </ExtraData> #}
+    </DataCollection>
+  </saveCreditCardRequestWS>
+</SaveCreditCard>
+{% endblock %}

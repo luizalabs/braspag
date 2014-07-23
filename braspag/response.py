@@ -340,3 +340,51 @@ class TransactionDataResponse(PagadorResponse):
         self._fields['credit_card_token'] = 'CreditCardToken'
 
         super(TransactionDataResponse, self).__init__(xml)
+
+
+class ProtectedCardResponse(object):
+    def __init__(self, xml):
+        dictxml = xmltodict.parse(xml)
+        self.body = dict
+        self.errors = []
+
+        if dictxml['soap:Envelope']['soap:Body']:
+            self.body = dictxml['soap:Envelope']['soap:Body']
+
+    def get_body_data(self, body):
+        self.correlation_id = body.get('CorrelationId')
+        self.success = to_bool(body.get('Success'))
+
+    def format_errors(self, error_items):
+        if isinstance(error_items, list):
+            [self.format_errors(e) for e in error_items]
+        else:
+            self.errors.append({
+                'error_code': error_items.get('ErrorCode'),
+                'error_message': error_items.get('ErrorMessage')
+            })
+
+
+class AddCardResponse(ProtectedCardResponse):
+    def __init__(self, xml):
+        super(AddCardResponse, self).__init__(xml)
+        body = self.body.get('SaveCreditCardResponse').get('SaveCreditCardResult')
+        self.get_body_data(body)
+
+        if self.success:
+            self.just_click_key = body.get('JustClickKey')
+        else:
+            error_items = body.get('ErrorReportCollection').get('ErrorReport')
+            self.format_errors(error_items)
+
+
+class InvalidateCardResponse(ProtectedCardResponse):
+    def __init__(self, xml):
+        super(InvalidateCardResponse, self).__init__(xml)
+        body = self.body.get('InvalidateCreditCardResponse').get('InvalidateCreditCardResult')
+        self.get_body_data(body)
+
+        if not self.success:
+            error_items = body.get('ErrorReportCollection').get('ErrorReport')
+            self.format_errors(error_items)
+            

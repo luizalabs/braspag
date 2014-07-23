@@ -166,4 +166,3 @@ class AuthorizeTest(BraspagTestCase):
                                              'soft_descriptor': u'Sax Alto Thailandês',
                                          }],
                                      })
-        
