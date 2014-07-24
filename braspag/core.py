@@ -24,6 +24,8 @@ from .response import CustomerDataResponse
 from .response import CreditCardCaptureResponse
 from .response import TransactionDataResponse
 from .response import BraspagOrderDataResponse
+from .response import AddCardResponse
+from .response import InvalidateCardResponse
 from xml.dom import minidom
 
 from tornado.httpclient import HTTPRequest
@@ -41,17 +43,8 @@ class TransactionType(object):
     RECURRENT_AUTOMATIC_CAPTURE = '6'
 
 
-class BraspagRequest(object):
-    """
-    Implements Braspag Pagador API (manual version 1.9).
-    """
-
+class GenericRequest(object):
     def __init__(self, merchant_id=None, homologation=False, request_timeout=10):
-        if homologation:
-            self.url = 'https://homologacao.pagador.com.br'
-        else:
-            self.url = 'https://www.pagador.com.br'  # pragma: no cover
-
         self.merchant_id = merchant_id
 
         self.jinja_env = jinja2.Environment(
@@ -89,20 +82,54 @@ class BraspagRequest(object):
             method='POST',
             body=body,
             request_timeout=self.request_timeout,
-            headers=(headers and headers or self.headers)
+            headers=headers or self.headers
         )
 
-    @gen.coroutine
-    def _request(self, xml, query=False):
-        """Make the http request to Braspag.
+    def _render_template(self, template_name, data_dict):
+        """Render a template.
         """
-        url = self._get_url(query and self.query_service or self.transaction_service)
+        data_dict['merchant_id'] = self.merchant_id
+
+        if not data_dict.get('request_id'):
+            data_dict['request_id'] = unicode(uuid.uuid4())
+
+        template = self.jinja_env.get_template(template_name)
+        xml_request = template.render(data_dict)
+        return spaceless(xml_request)
+
+    @gen.coroutine
+    def make_request(self, xml, url):
         logging.debug('Request: %s' % minidom.parseString(xml.encode('utf-8')).toprettyxml(indent='  '))
         try:
             response = yield self.http_client.fetch(self._get_request(url, xml))
         except HTTPError as e:
             raise e.code == 599 and HTTPTimeoutError(e.code, e.message) or HTTPError(e.code, e.message)
         logging.debug('Response: %s' % response)
+        raise gen.Return(response)
+
+
+class BraspagRequest(GenericRequest):
+    """
+    Implements Braspag Pagador API (manual version 1.9).
+    """
+
+    def __init__(self, merchant_id=None, homologation=False, request_timeout=10):
+        super(BraspagRequest, self).__init__(merchant_id, homologation, request_timeout)
+        if homologation:
+            self.url = 'https://homologacao.pagador.com.br'
+        else:
+            self.url = 'https://www.pagador.com.br'  # pragma: no cover
+
+        # services
+        self.query_service = '/services/pagadorQuery.asmx'
+        self.transaction_service = '/webservice/pagadorTransaction.asmx'
+
+    @gen.coroutine
+    def _request(self, xml, query=False):
+        """Make the http request to Braspag.
+        """
+        url = self._get_url(query and self.query_service or self.transaction_service)
+        response = yield gen.Task(self.make_request, xml, url)
         raise gen.Return(response)
 
     @gen.coroutine
@@ -260,18 +287,6 @@ class BraspagRequest(object):
         response = yield self._request(self._render_template('get_braspag_order_data.xml',
                                                     context), query=True)
         raise gen.Return(BraspagOrderDataResponse(response.body))
-
-    def _render_template(self, template_name, data_dict):
-        """Render a template.
-        """
-        data_dict['merchant_id'] = self.merchant_id
-
-        if not data_dict.get('request_id'):
-            data_dict['request_id'] = unicode(uuid.uuid4())
-
-        template = self.jinja_env.get_template(template_name)
-        xml_request = template.render(data_dict)
-        return spaceless(xml_request)
 
     @method_must_be_redesigned
     def issue_billet(self, **kwargs):  # pragma: no cover
@@ -431,3 +446,62 @@ class BraspagTransaction(object):
             if attr == 'amount':
                 assert isinstance(kwargs[attr], int), 'amount must be int'
             setattr(self, attr, kwargs[attr])
+
+
+class ProtectedCardRequest(GenericRequest):
+    """
+    Implements Braspag Cartão Protegido API (manual version 2.1).
+    """
+
+    def __init__(self, merchant_id=None, homologation=False, request_timeout=10):
+        super(ProtectedCardRequest, self).__init__(merchant_id, homologation, request_timeout)
+        if homologation:
+            self.url = 'https://homologacao.braspag.com.br'
+            self.protected_card_service = '/services/v2/testenvironment/cartaoprotegido.asmx'            
+        else:
+            self.url = 'https://cartaoprotegido.braspag.com.br'
+            self.protected_card_service = '/services/v2/cartaoprotegido.asmx'
+
+    @gen.coroutine
+    def _request(self, xml):
+        """Make the http request to Braspag.
+        """
+        url = self._get_url(self.protected_card_service)
+        response = yield gen.Task(self.make_request, xml, url)
+        raise gen.Return(response)
+
+    @gen.coroutine
+    def add_card(self, **kwargs):
+        """Add a card to JustClick
+
+        The arguments to the Cartão Protegido API call must be passed as keyword
+        arguments and are:
+
+        :arg customer_identification
+        :arg customer_name
+        :arg card_holder
+        :arg card_number
+        :arg card_expiration
+        :arg just_click_alias
+        """
+        required_keys = ['customer_identification', 'customer_name', 'card_holder', 'card_number', 'card_expiration']
+        assert all([kwargs.has_key(k) for k in required_keys]), 'add_card requires all the variables: {0}'.format(required_keys)
+
+        response = yield self._request(self._render_template('add_card.xml', kwargs))
+        raise gen.Return(AddCardResponse(response.body))
+
+    @gen.coroutine
+    def invalidate_card(self, **kwargs):
+        """Invalidate a card to JustClick
+
+        The arguments to the Cartão Protegido API call must be passed as keyword
+        arguments and are:
+
+        :arg just_click_key
+        :arg just_click_alias
+        """
+        assert kwargs.has_key('just_click_key'), 'invalidate_card requires just_click_key variable'
+        
+        response = yield self._request(self._render_template('invalidate_card.xml', kwargs))
+        raise gen.Return(InvalidateCardResponse(response.body))
+        

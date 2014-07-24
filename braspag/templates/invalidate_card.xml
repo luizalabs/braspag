@@ -1,0 +1,10 @@
+{% extends 'base.xml' %}
+{% block body_content %}
+<InvalidateCreditCard xmlns="http://www.cartaoprotegido.com.br/WebService/">
+  <invalidateCreditCardRequestWS>
+    <MerchantKey>{{ merchant_id }}</MerchantKey>
+    <JustClickKey>{{ just_click_key }}</JustClickKey>
+    <JustClickAlias>{{ just_click_alias }}</JustClickAlias>
+  </invalidateCreditCardRequestWS>
+</InvalidateCreditCard>
+{% endblock %}
