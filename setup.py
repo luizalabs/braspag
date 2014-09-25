@@ -11,14 +11,14 @@ readme = open(os.path.join(cwd, 'README.md')).read()
 
 setup(
     name='braspag',
-    version='0.4.8',
-    description = "Python library to consume Braspag SOAP Web services",
-    long_description = readme,
+    version='0.4.9',
+    description="Python library to consume Braspag SOAP Web services",
+    long_description=readme,
     author='Sergio Oliveira',
     author_email='sergio@tracy.com.br',
     url='https://github.com/luizalabs/braspag',
     packages=['braspag'],
-    package_data = {
+    package_data={
         'braspag': ['templates/*.xml'],
     },
     test_suite='tests.suite',
