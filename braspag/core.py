@@ -26,6 +26,7 @@ from .response import TransactionDataResponse
 from .response import BraspagOrderDataResponse
 from .response import AddCardResponse
 from .response import InvalidateCardResponse
+from .response import BraspagOrderIdDataResponse
 from xml.dom import minidom
 
 from tornado.httpclient import HTTPRequest
@@ -65,7 +66,7 @@ class GenericRequest(object):
     @property
     def headers(self):
         """default headers to be sent on http requests"""
-        return { "Content-Type": "text/xml; charset=UTF-8" }
+        return {"Content-Type": "text/xml; charset=UTF-8"}
 
     def _get_url(self, service):
         """Return the full URL for a given service
@@ -288,6 +289,27 @@ class BraspagRequest(GenericRequest):
                                                     context), query=True)
         raise gen.Return(BraspagOrderDataResponse(response.body))
 
+    @gen.coroutine
+    def get_braspag_order_id_by_order(self, **kwargs):
+        """Get the data from an order.
+
+        The arguments to be sent to the Braspag capture API must be passed
+        as keyword arguments and are:
+
+        :arg order_id: The id of the order
+        :arg request_id: The request_id used to generate the order, optional.
+        """
+        assert kwargs.has_key('order_id'), 'Invalid Order ID'
+
+        context = {
+            'order_id': kwargs.get('order_id'),
+            'request_id': kwargs.get('request_id')
+        }
+
+        response = yield self._request(self._render_template('get_braspag_order_id_by_order.xml',
+                                                    context), query=True)
+        raise gen.Return(BraspagOrderIdDataResponse(response.body))
+
     @method_must_be_redesigned
     def issue_billet(self, **kwargs):  # pragma: no cover
         """DEPRECATED -- must be redesigned to work asynchronously.
@@ -355,36 +377,36 @@ class BraspagRequest(GenericRequest):
 
 
 class BraspagTransaction(object):
-     """
-     :arg amount: Amount to charge.
-     :arg card_holder: Name printed on card.
-     :arg card_number: Card number.
-     :arg card_security_code: Card security code.
-     :arg card_exp_date: Card expiration date.
-     :arg save_card: Flag that tell to Braspag to store card number.
-                     If set to True Response will return a card token.
-                     *Default: False*.
-     :arg card_token: Card token returned by Braspag. When used it
-                      should replace *card_holder*, *card_exp_date*,
-                      *card_number* and *card_security_code*.
-     :arg number_of_payments: Number of payments that the amount will
-                              be devided (number of months). *Default: 1*.
-     :arg currency: Currency of the given amount. *Default: BRL*.
-     :arg country: User's country. *Default: BRA*.
-     :arg transaction_type: An integer representing one of the
-                            :ref:`transaction_types`. *Default: 2*.
-     :arg payment_plan: An integer representing how multiple payments should
-                        be handled. *Default: 0*. See :ref:`payment_plans`.
-     :arg payment_method: Integer representing one of the
-                          available :ref:`payment_methods`.
-     :arg soft_descriptor: Order description to be shown on the customer
-                           card statement. Maximum of 13 characters.
-     """
+    """
+    :arg amount: Amount to charge.
+    :arg card_holder: Name printed on card.
+    :arg card_number: Card number.
+    :arg card_security_code: Card security code.
+    :arg card_exp_date: Card expiration date.
+    :arg save_card: Flag that tell to Braspag to store card number.
+                    If set to True Response will return a card token.
+                    *Default: False*.
+    :arg card_token: Card token returned by Braspag. When used it
+                     should replace *card_holder*, *card_exp_date*,
+                     *card_number* and *card_security_code*.
+    :arg number_of_payments: Number of payments that the amount will
+                             be devided (number of months). *Default: 1*.
+    :arg currency: Currency of the given amount. *Default: BRL*.
+    :arg country: User's country. *Default: BRA*.
+    :arg transaction_type: An integer representing one of the
+                           :ref:`transaction_types`. *Default: 2*.
+    :arg payment_plan: An integer representing how multiple payments should
+                       be handled. *Default: 0*. See :ref:`payment_plans`.
+    :arg payment_method: Integer representing one of the
+                         available :ref:`payment_methods`.
+    :arg soft_descriptor: Order description to be shown on the customer
+                          card statement. Maximum of 13 characters.
+    """
 
-     def __init__(self, **kwargs):
+    def __init__(self, **kwargs):
         assert any((kwargs.get('card_number'),
                     kwargs.get('card_token'))),\
-                    'card_number ou card_token devem ser fornecidos'
+            'card_number ou card_token devem ser fornecidos'
 
         if kwargs.get('card_number'):
             kwargs['card_token'] = None
@@ -457,7 +479,7 @@ class ProtectedCardRequest(GenericRequest):
         super(ProtectedCardRequest, self).__init__(merchant_id, homologation, request_timeout)
         if homologation:
             self.url = 'https://homologacao.braspag.com.br'
-            self.protected_card_service = '/services/v2/testenvironment/cartaoprotegido.asmx'            
+            self.protected_card_service = '/services/v2/testenvironment/cartaoprotegido.asmx'
         else:
             self.url = 'https://cartaoprotegido.braspag.com.br'
             self.protected_card_service = '/services/v2/cartaoprotegido.asmx'
@@ -501,7 +523,6 @@ class ProtectedCardRequest(GenericRequest):
         :arg just_click_alias
         """
         assert kwargs.has_key('just_click_key'), 'invalidate_card requires just_click_key variable'
-        
+
         response = yield self._request(self._render_template('invalidate_card.xml', kwargs))
         raise gen.Return(InvalidateCardResponse(response.body))
-        

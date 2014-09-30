@@ -250,6 +250,30 @@ class BraspagOrderDataResponse(PagadorDictResponse):
             self.format_errors(error_items)
 
 
+class BraspagOrderIdDataResponse(PagadorDictResponse):
+
+    def __init__(self, xml):
+        super(BraspagOrderIdDataResponse, self).__init__(xml)
+        body = self.body.get('GetOrderIdDataResponse').get('GetOrderIdDataResult')
+        self.get_body_data(body)
+        self.orders = []
+
+        if self.success:
+            if isinstance(body.get('OrderIdDataCollection').get('OrderIdTransactionResponse'), list):
+                self.orders = [self.format_order(order) for order in body.get('OrderIdDataCollection').get('OrderIdTransactionResponse')]
+            else:
+                self.orders = [self.format_order(body.get('OrderIdDataCollection').get('OrderIdTransactionResponse'))]
+        else:
+            error_items = body.get('ErrorReportDataCollection').get('ErrorReportDataResponse')
+            self.format_errors(error_items)
+
+    def format_order(self, order):
+        return {
+            'braspag_order_id': order.get('BraspagOrderId'),
+            'braspag_transaction_id': order.get('BraspagTransactionId').get('guid')
+        }
+
+
 class BilletResponse(PagadorResponse):  # pragma: no cover
 
     def __init__(self, xml):
@@ -387,4 +411,3 @@ class InvalidateCardResponse(ProtectedCardResponse):
         if not self.success:
             error_items = body.get('ErrorReportCollection').get('ErrorReport')
             self.format_errors(error_items)
-            
