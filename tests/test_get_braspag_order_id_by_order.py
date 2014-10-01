@@ -20,5 +20,5 @@ class GetTransactionDataTest(BraspagTestCase):
         assert response.success == True
         assert response.orders[0]['braspag_transaction_id'] == u'cb3321af-627f-46ce-aa0d-05f413304c72'
         assert response.orders[0]['braspag_order_id'] == u'b1aede44-e3a7-4672-b041-069fef97aa67'
-        assert response.orders[1]['braspag_transaction_id'] == u'05bc5eab-c5fc-4dce-8782-f587ebba1882'
-        assert response.orders[1]['braspag_order_id'] == u'5675c820-29f5-4dd9-bc90-9ff970d0aed5'
+        assert response.orders[1]['braspag_transaction_id'] == u'3e766fbb-3d36-4049-9018-893b97dc5643'
+        assert response.orders[1]['braspag_order_id'] == u'b5aa9eff-55d4-4cc0-9fbc-6b237920ded0'
