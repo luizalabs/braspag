@@ -88,7 +88,11 @@ class AuthorizeTest(BraspagTestCase):
                                      }],
                                  })
         assert response.success == True
-        
+        assert response.transactions[0]['return_code'] == '4'
+        assert response.transactions[0]['return_message'] == u'Operation Successful'
+        assert response.transactions[0]['status'] == 1
+        assert response.transactions[0]['status_message'] == 'Authorized'
+
         card_token = response.transactions[0]['card_token']
         response = yield self.braspag.authorize(**{
                                      'request_id': '782a56e2-2dae-11e2-b3ee-080027d29772',
@@ -107,7 +111,7 @@ class AuthorizeTest(BraspagTestCase):
                                          'payment_method': PAYMENT_METHODS['Simulated']['BRL'],
                                      }],
                                  })
-        
+
         assert response.success == True
         assert response.transactions[0]['return_code'] == '4'
         assert response.transactions[0]['return_message'] == u'Operation Successful'
