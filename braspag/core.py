@@ -98,14 +98,24 @@ class GenericRequest(object):
         xml_request = template.render(data_dict)
         return spaceless(xml_request)
 
+    def pretty_body(self, payload):
+        """Try and return the payload as parsed and indented XML. If we fail to parse it,
+        print it as is.
+        """
+        try:
+            body = minidom.parseString(payload.encode('utf-8')).toprettyxml(indent='  ')
+        except Exception as e:
+            body = response.body
+        return body
+
     @gen.coroutine
-    def make_request(self, xml, url):
-        logging.debug('Request: %s' % minidom.parseString(xml.encode('utf-8')).toprettyxml(indent='  '))
+    def fetch(self, xml, url):
+        self.log.debug('Request: %s' % self.pretty_body(xml))
         try:
             response = yield self.http_client.fetch(self._get_request(url, xml))
         except HTTPError as e:
             raise e.code == 599 and HTTPTimeoutError(e.code, e.message) or HTTPError(e.code, e.message)
-        logging.debug('Response: %s' % response)
+        self.log.debug('Response code: %s body: %s' % (response.code, self.pretty_body(response.body)))
         raise gen.Return(response)
 
 
@@ -130,7 +140,7 @@ class BraspagRequest(GenericRequest):
         """Make the http request to Braspag.
         """
         url = self._get_url(query and self.query_service or self.transaction_service)
-        response = yield gen.Task(self.make_request, xml, url)
+        response = yield gen.Task(self.fetch, xml, url)
         raise gen.Return(response)
 
     @gen.coroutine
@@ -489,7 +499,7 @@ class ProtectedCardRequest(GenericRequest):
         """Make the http request to Braspag.
         """
         url = self._get_url(self.protected_card_service)
-        response = yield gen.Task(self.make_request, xml, url)
+        response = yield gen.Task(self.fetch, xml, url)
         raise gen.Return(response)
 
     @gen.coroutine
