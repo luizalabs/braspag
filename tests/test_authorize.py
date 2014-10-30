@@ -145,7 +145,7 @@ class AuthorizeTest(BraspagTestCase):
     @gen_test
     def test_authorize_timeout(self):
         self.braspag.request_timeout = 0.000001
-        with self.assertRaises(HTTPTimeoutError), self.replay():
+        with self.assertRaises(HTTPTimeoutError):
             response = yield self.braspag.authorize(**{
                                          'request_id': '782a56e2-2dae-11e2-b3ee-080027d29772',
                                          'order_id': '2cf84e51-c45b-45d9-9f64-554a6e088668',

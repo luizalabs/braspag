@@ -1,6 +1,7 @@
 # -*- encoding: utf-8 -*-
 
 import string
+import re
 import functools
 import warnings
 import xml.parsers.expat
@@ -95,3 +96,21 @@ def method_must_be_redesigned(func):
         )
         return func(*args, **kwargs)  # pragma: no cover
     return new_func
+
+def mask_credit_card_from_xml(xml):
+    '''
+    It receives a xml and return it all credit cards tags masked.
+    '''
+    def mask_card_number(match_obj):
+        card_number = match_obj.group(1)
+        asterisks = u'*' * 6
+        first_digits = card_number[:6]
+        last_digits = card_number[-4:]
+        masked = u'<CardNumber>{0}{1}{2}</CardNumber>'.format(first_digits,
+                                                              asterisks,
+                                                              last_digits)
+        return masked
+
+    xml = re.sub(r'<CardNumber>(\d*)</CardNumber>', mask_card_number, xml)
+    return xml
+
