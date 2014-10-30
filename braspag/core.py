@@ -32,6 +32,7 @@ from tornado.httpclient import HTTPRequest
 from tornado.httpclient import HTTPError
 from tornado import httpclient
 from tornado import gen
+import re
 
 
 class BaseRequest(object):
@@ -88,7 +89,7 @@ class BaseRequest(object):
         xml_request = template.render(data_dict)
         return spaceless(xml_request)
 
-    def pretty_body(self, payload):
+    def pretty_xml(self, payload):
         """Try and return the payload as parsed and indented XML. If we fail to parse it,
         print it as is.
         """
@@ -98,16 +99,26 @@ class BaseRequest(object):
             body = payload
         return body
 
+    def mask_credit_card(self, xml):
+        print xml
+        return xml
+        card_number = re.sub(r'<CardNumber>(\d*)</CardNumber>', r'\1', xml)
+        asterisks = len(card_number) - 10
+        masked = u'{0}{1}{2}'.format(card_number[:6], '*' * asterisks, card_number[-4:])
+        #raise Exception('xml: %s masked: %s' % (xml, masked))
+        return re.sub(r'<CardNumber>{0}</CardNumber>'.format(card_number),
+                      r'<CardNumber>{0}</CardNumber>'.format(masked), xml)
+
     @gen.coroutine
     def fetch(self, xml, url):
-        self.log.debug('Request: %s' % self.pretty_body(xml))
+        self.log.debug('Request: %s' % self.pretty_xml(self.mask_credit_card(xml)))
         try:
             response = yield self.http_client.fetch(self._get_request(url, xml))
         except HTTPError as e:
             self.log.error('No response received.')
             raise e.code == 599 and HTTPTimeoutError(e.code, e.message) or HTTPError(e.code, e.message)
 
-        self.log.debug('Response code: %s body: %s' % (response.code, self.pretty_body(response.body)))
+        self.log.debug('Response code: %s body: %s' % (response.code, self.pretty_xml(response.body)))
         raise gen.Return(response)
 
 

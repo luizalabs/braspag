@@ -29,7 +29,6 @@ class GetTransactionDataTest(BraspagTestCase):
                 }],
             })
         assert response.success == True
-        raise Exception('response: %s' % response)
         order_id = response.orders[0]['order_id']
 
         response = yield self.braspag.get_braspag_order_id_by_order(**{
