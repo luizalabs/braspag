@@ -274,43 +274,6 @@ class BraspagOrderIdDataResponse(PagadorDictResponse):
         }
 
 
-class BilletResponse(PagadorResponse):  # pragma: no cover
-
-    def __init__(self, xml):
-        self._fields = getattr(self, '_fields', {})
-
-        # auth fields
-        self._fields['order_id'] = 'OrderId'
-        self._fields['braspag_order_id'] = 'BraspagOrderId'
-        self._fields['payment_method'] = ('PaymentMethod', int)
-
-        self._fields['number'] = ('BoletoNumber', to_int)
-        self._fields['expiration_date'] = ('BoletoExpirationDate', to_date)
-        self._fields['url'] = 'BoletoUrl'
-        self._fields['assignor'] = 'Assignor'
-        self._fields['barcode'] = 'BarCodeNumber'
-        self._fields['message'] = 'Message'
-
-        super(BilletResponse, self).__init__(xml)
-
-
-class BilletDataResponse(BilletResponse):  # pragma: no cover
-
-    def __init__(self, xml):
-        self._fields = getattr(self, '_fields', {})
-
-        self._fields['document_number'] = 'DocumentNumber'
-        self._fields['document_date'] = ('DocumentDate', to_date)
-        self._fields['payment_date'] = ('PaymentDate', to_date)
-        self._fields['type'] = 'BoletoType'
-        self._fields['paid_amount'] = ('PaidAmount', to_int)
-        self._fields['bank_number'] = 'BankNumber'
-        self._fields['agency'] = 'Agency'
-        self._fields['account'] = 'Account'
-
-        super(BilletDataResponse, self).__init__(xml)
-
-
 class BraspagOrderIdResponse(PagadorResponse):
 
     def __init__(self, xml):

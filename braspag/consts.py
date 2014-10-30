@@ -1,5 +1,23 @@
 # -*- encoding: utf-8 -*-
 
+
+class TransactionType(object):
+    """Transaction types within Braspag API"""
+    PRE_AUTHORIZATION = '1'
+    AUTOMATIC_CAPTURE = '2'
+    PRE_AUTHORIZATION_WITH_AUTHENTICATION = '3'
+    AUTOMATIC_CAPTURE_WITH_AUTHENTICATION = '4'
+    RECURRENT_PRE_AUTHORIZATION = '5'
+    RECURRENT_AUTOMATIC_CAPTURE = '6'
+
+
+class PaymentPlanType(object):
+    """Playment plan types' constants"""
+    NO_INSTALLMENTS = 0
+    INSTALLMENTS_BY_ISSUING_BANK = 1
+    INSTALLMENTS_BY_ESTABLISHMENT = 2
+
+
 #Payment Methods
 PAYMENT_METHODS = {
     'Cielo': {
