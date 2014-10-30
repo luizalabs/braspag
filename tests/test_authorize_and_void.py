@@ -5,13 +5,12 @@ from __future__ import absolute_import
 import logging
 from braspag.consts import PAYMENT_METHODS
 from .base import BraspagTestCase
-from .base import ASYNC_TIMEOUT
 from tornado.testing import gen_test
 
 
 class AuthorizeAndVoidTest(BraspagTestCase):
 
-    @gen_test(timeout=ASYNC_TIMEOUT)
+    @gen_test
     def test_authorize_and_void(self):
         response = yield self.braspag.authorize(**{
                                      'request_id': '782a56e2-2dae-11e2-b3ee-080027d29772',

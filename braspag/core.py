@@ -11,12 +11,10 @@ import jinja2
 
 from .utils import spaceless
 from .utils import is_valid_guid
-from .utils import method_must_be_redesigned
+from .utils import mask_credit_card_from_xml
 from .exceptions import BraspagException
 from .exceptions import HTTPTimeoutError
 from .response import CreditCardAuthorizationResponse
-from .response import BilletResponse
-from .response import BilletDataResponse
 from .response import CreditCardCancelResponse
 from .response import CreditCardRefundResponse
 from .response import BraspagOrderIdResponse
@@ -27,24 +25,18 @@ from .response import BraspagOrderDataResponse
 from .response import AddCardResponse
 from .response import InvalidateCardResponse
 from .response import BraspagOrderIdDataResponse
+from .consts import TransactionType
+from .consts import PaymentPlanType
 from xml.dom import minidom
 
 from tornado.httpclient import HTTPRequest
 from tornado.httpclient import HTTPError
 from tornado import httpclient
 from tornado import gen
+import re
 
 
-class TransactionType(object):
-    PRE_AUTHORIZATION = '1'
-    AUTOMATIC_CAPTURE = '2'
-    PRE_AUTHORIZATION_WITH_AUTHENTICATION = '3'
-    AUTOMATIC_CAPTURE_WITH_AUTHENTICATION = '4'
-    RECURRENT_PRE_AUTHORIZATION = '5'
-    RECURRENT_AUTOMATIC_CAPTURE = '6'
-
-
-class GenericRequest(object):
+class BaseRequest(object):
     def __init__(self, merchant_id=None, homologation=False, request_timeout=10):
         self.merchant_id = merchant_id
 
@@ -98,18 +90,32 @@ class GenericRequest(object):
         xml_request = template.render(data_dict)
         return spaceless(xml_request)
 
+    def pretty_xml(self, payload):
+        """Try and return the payload as parsed and indented XML. If we fail to parse it,
+        print it as is.
+        """
+        try:
+            body = minidom.parseString(payload.encode('utf-8')).toprettyxml(indent='  ')
+        except Exception as e:
+            body = payload
+        return body
+
+
     @gen.coroutine
-    def make_request(self, xml, url):
-        logging.debug('Request: %s' % minidom.parseString(xml.encode('utf-8')).toprettyxml(indent='  '))
+    def fetch(self, xml, url):
+        masked_xml = utils.mask_credit_card(xml)
+        self.log.debug('Request: %s' % self.pretty_xml(masked_xml))
         try:
             response = yield self.http_client.fetch(self._get_request(url, xml))
         except HTTPError as e:
+            self.log.error('No response received.')
             raise e.code == 599 and HTTPTimeoutError(e.code, e.message) or HTTPError(e.code, e.message)
-        logging.debug('Response: %s' % response)
+
+        self.log.debug('Response code: %s body: %s' % (response.code, self.pretty_xml(response.body)))
         raise gen.Return(response)
 
 
-class BraspagRequest(GenericRequest):
+class BraspagRequest(BaseRequest):
     """
     Implements Braspag Pagador API (manual version 1.9).
     """
@@ -130,7 +136,7 @@ class BraspagRequest(GenericRequest):
         """Make the http request to Braspag.
         """
         url = self._get_url(query and self.query_service or self.transaction_service)
-        response = yield gen.Task(self.make_request, xml, url)
+        response = yield gen.Task(self.fetch, xml, url)
         raise gen.Return(response)
 
     @gen.coroutine
@@ -310,71 +316,6 @@ class BraspagRequest(GenericRequest):
                                                     context), query=True)
         raise gen.Return(BraspagOrderIdDataResponse(response.body))
 
-    @method_must_be_redesigned
-    def issue_billet(self, **kwargs):  # pragma: no cover
-        """DEPRECATED -- must be redesigned to work asynchronously.
-
-        All arguments supplied to this method must be keyword arguments.
-
-        :arg order_id: Order id. It will be used to indentify the
-                       order later in Braspag.
-        :arg customer_id: Must be user's CPF/CNPJ.
-        :arg customer_name: User's full name.
-        :arg customer_email: User's email address.
-        :arg amount: Amount to charge.
-        :arg currency: Currency of the given amount. *Default: BRL*.
-        :arg country: User's country. *Default: BRA*.
-        :arg payment_method: Payment method code
-        :arg soft_descriptor: Order description to be shown on the customer
-                              billet. Maximum of 13 characters.
-
-        :returns: :class:`~braspag.BraspagResponse`
-
-        """
-        if not kwargs.get('currency'):
-            kwargs['currency'] = 'BRL'
-
-        if not kwargs.get('country'):
-            kwargs['country'] = 'BRA'
-
-        soft_desc = ''
-        if kwargs.get('soft_descriptor'):
-            # only keep first 13 chars
-            soft_desc = kwargs.get('soft_descriptor')[:13]
-
-            # Replace special chars by ascii
-            soft_desc = unicodedata.normalize('NFKD', soft_desc)
-            soft_desc = soft_desc.encode('ascii', 'ignore')
-
-        kwargs['soft_descriptor'] = soft_desc
-
-        kwargs['is_billet'] = True
-
-        xml_request = self._render_template('authorize_billet.xml', kwargs)
-        return BilletResponse(self._request(spaceless(xml_request)))
-
-    @method_must_be_redesigned
-    def get_billet_data(self, **kwargs):  # pragma: no cover
-        """DEPRECATED -- must be redesigned to work asynchronously.
-
-        All arguments supplied to this method must be keyword arguments.
-
-        :arg transaction_id: The id of the transaction generated previously by
-        *issue_billet*
-
-        :returns: :class:`~braspag.BilletResponse`
-
-        """
-        assert is_valid_guid(kwargs.get('transaction_id')), 'Invalid Transaction ID'
-
-        context = {
-            'transaction_id': kwargs.get('transaction_id'),
-            'request_id': kwargs.get('request_id')
-        }
-        xml_request = self._render_template('get_billet_data.xml', context)
-        xml_response = self._request(spaceless(xml_request), query=True)
-        return BilletDataResponse(xml_response)
-
 
 class BraspagTransaction(object):
     """
@@ -429,13 +370,10 @@ class BraspagTransaction(object):
             raise BraspagException('Number of payments must be int.')
 
         if not kwargs.get('payment_plan'):
-
             if number_of_payments > 1:
-                # 2 = parcelado pelo emissor do cartão
-                kwargs['payment_plan'] = 2
+                kwargs['payment_plan'] = PaymentPlanType.INSTALLMENTS_BY_ESTABLISHMENT
             else:
-                # 0 = a vista
-                kwargs['payment_plan'] = 0
+                kwargs['payment_plan'] = PaymentPlanType.NO_INSTALLMENTS
 
         if not kwargs.get('currency'):
             kwargs['currency'] = 'BRL'
@@ -470,7 +408,7 @@ class BraspagTransaction(object):
             setattr(self, attr, kwargs[attr])
 
 
-class ProtectedCardRequest(GenericRequest):
+class ProtectedCardRequest(BaseRequest):
     """
     Implements Braspag Cartão Protegido API (manual version 2.1).
     """
@@ -489,7 +427,7 @@ class ProtectedCardRequest(GenericRequest):
         """Make the http request to Braspag.
         """
         url = self._get_url(self.protected_card_service)
-        response = yield gen.Task(self.make_request, xml, url)
+        response = yield gen.Task(self.fetch, xml, url)
         raise gen.Return(response)
 
     @gen.coroutine

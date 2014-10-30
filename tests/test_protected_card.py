@@ -6,13 +6,12 @@ from braspag.consts import PAYMENT_METHODS
 from braspag.exceptions import BraspagException
 from braspag.exceptions import HTTPTimeoutError
 from .base import BraspagTestCase
-from .base import ASYNC_TIMEOUT
 from tornado.testing import gen_test
 
 
 class ProtectedCardTest(BraspagTestCase):
 
-    @gen_test(timeout=ASYNC_TIMEOUT)
+    @gen_test
     def test_add_card(self):
         response = yield self.protected_card.add_card(**{
             'customer_name': u'José da Silva',
@@ -23,7 +22,7 @@ class ProtectedCardTest(BraspagTestCase):
         })
         assert response.success == True
 
-    @gen_test(timeout=ASYNC_TIMEOUT)
+    @gen_test
     def test_add_card_without_required_field(self):
         response = yield self.protected_card.add_card(**{
             'customer_name': u'José da Silva',
@@ -37,7 +36,7 @@ class ProtectedCardTest(BraspagTestCase):
         assert response.errors[0]['error_code'] == u'749'
         assert response.errors[0]['error_message'] == u'JustClick alias already exists'
 
-    @gen_test(timeout=ASYNC_TIMEOUT)
+    @gen_test
     def test_invalidate_card(self):
         response = yield self.protected_card.add_card(**{
             'customer_name': u'José da Silva',
@@ -52,4 +51,3 @@ class ProtectedCardTest(BraspagTestCase):
             'just_click_key': response.just_click_key
         })
         assert response.success == True
-        

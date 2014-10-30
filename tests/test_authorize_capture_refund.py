@@ -4,13 +4,12 @@ from __future__ import absolute_import
 
 from braspag.consts import PAYMENT_METHODS
 from .base import BraspagTestCase
-from .base import ASYNC_TIMEOUT
 from tornado.testing import gen_test
 
 
 class AuthorizeCaptureRefundTest(BraspagTestCase):
 
-    @gen_test(timeout=ASYNC_TIMEOUT)
+    @gen_test
     def test_authorize_capture_refund(self):
         response = yield self.braspag.authorize(**{
                                      'request_id': '782a56e2-2dae-11e2-b3ee-080027d29772',
@@ -24,8 +23,9 @@ class AuthorizeCaptureRefundTest(BraspagTestCase):
                                          'card_number': '0000000000000001',
                                          'card_security_code': '123',
                                          'card_exp_date': '05/2018',
-                                         'save_card': True,
+                                         'save_card': False,
                                          'payment_method': PAYMENT_METHODS['Simulated']['BRL'],
+                                         'soft_descriptor': u'Sax Alto Chinês',
                                      }],
                                  })
 
@@ -39,10 +39,10 @@ class AuthorizeCaptureRefundTest(BraspagTestCase):
         assert response.transactions[0]['status'] == 1  # TODO: transformar em constante, tabela 13.10.1 do manual do pagador
         assert response.transactions[0]['status_message'] == 'Authorized'
 
-        response = yield self.braspag.capture(transaction_id=response.transactions[0]['braspag_transaction_id'],
-                               amount=response.transactions[0]['amount'],
-                               request_id=response.correlation_id,
-                               )
+        response = yield self.braspag.capture(
+                transaction_id=response.transactions[0]['braspag_transaction_id'],
+                amount=response.transactions[0]['amount'],
+                request_id=response.correlation_id)
 
         assert response.success == True
         assert response.transactions[0]['amount'] == 100000

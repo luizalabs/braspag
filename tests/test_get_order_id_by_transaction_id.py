@@ -4,13 +4,12 @@ from __future__ import absolute_import
 
 from braspag.consts import PAYMENT_METHODS
 from .base import BraspagTestCase
-from .base import ASYNC_TIMEOUT
 from tornado.testing import gen_test
 
 
 class GetOrderIdTest(BraspagTestCase):
 
-    @gen_test(timeout=ASYNC_TIMEOUT)
+    @gen_test
     def test_get_order_id(self):
         response = yield self.braspag.authorize(**{
                                      'request_id': '782a56e2-2dae-11e2-b3ee-080027d29772',
