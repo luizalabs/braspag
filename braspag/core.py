@@ -100,10 +100,9 @@ class BaseRequest(object):
             body = payload
         return body
 
-
     @gen.coroutine
     def fetch(self, xml, url):
-        masked_xml = utils.mask_credit_card(xml)
+        masked_xml = mask_credit_card_from_xml(xml)
         self.log.debug('Request: %s' % self.pretty_xml(masked_xml))
         try:
             response = yield self.http_client.fetch(self._get_request(url, xml))
