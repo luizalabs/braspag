@@ -368,7 +368,7 @@ class BraspagTransaction(object):
         except ValueError:
             raise BraspagException('Number of payments must be int.')
 
-        if not kwargs.get('payment_plan'):
+        if not 'payment_plan' in kwargs:
             if number_of_payments > 1:
                 kwargs['payment_plan'] = PaymentPlanType.INSTALLMENTS_BY_ESTABLISHMENT
             else:

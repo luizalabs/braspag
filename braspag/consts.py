@@ -14,8 +14,8 @@ class TransactionType(object):
 class PaymentPlanType(object):
     """Playment plan types' constants"""
     NO_INSTALLMENTS = 0
-    INSTALLMENTS_BY_ISSUING_BANK = 1
-    INSTALLMENTS_BY_ESTABLISHMENT = 2
+    INSTALLMENTS_BY_ESTABLISHMENT = 1
+    INSTALLMENTS_BY_ISSUING_BANK = 2
 
 
 #Payment Methods
