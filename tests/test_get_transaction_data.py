@@ -35,13 +35,13 @@ class GetTransactionDataTest(BraspagTestCase):
         assert response.transactions[0]['payment_method'] == 997
         assert response.transactions[0]['return_code'] == '4'
         assert response.transactions[0]['return_message'] == u'Operation Successful'
-        assert response.transactions[0]['status'] == 1  # TODO: transformar em constante, tabela 13.10.1 do manual do pagador
+        assert response.transactions[0]['status'] == 1
         assert response.transactions[0]['status_message'] == 'Authorized'
 
         response = yield self.braspag.get_transaction_data(transaction_id=response.transactions[0]['braspag_transaction_id'])
 
         assert response.success == True
-        assert response.order_id == u'2cf84e51-c45b-45d9-9f64-554a6e088668'
-        assert response.payment_method == 997
-        assert response.number_of_payments == 3
-        assert response.status == 2
+        assert response.transaction['order_id'] == u'2cf84e51-c45b-45d9-9f64-554a6e088668'
+        assert response.transaction['payment_method'] == 997
+        assert response.transaction['number_of_payments'] == 3
+        assert response.transaction['status'] == 2
