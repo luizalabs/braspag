@@ -120,8 +120,20 @@ class PagadorDictResponse(object):
             if transaction_items.has_key('CapturedDate'):
                 data['captured_date'] = to_date(transaction_items.get('CapturedDate'))
 
+            if transaction_items.has_key('VoidedDate'):
+                data['voided_date'] = to_date(transaction_items.get('VoidedDate'))
+
             if transaction_items.has_key('OrderId'):
                 data['order_id'] = transaction_items.get('OrderId')
+
+            if transaction_items.has_key('Currency'):
+                data['currency'] = transaction_items.get('Currency')
+
+            if transaction_items.has_key('Country'):
+                data['country'] = transaction_items.get('Country')
+
+            if transaction_items.has_key('NumberOfPayments'):
+                data['number_of_payments'] = to_int(transaction_items.get('NumberOfPayments'))
 
             self.transactions.append(data)
 
@@ -304,29 +316,29 @@ class CustomerDataResponse(PagadorResponse):
         super(CustomerDataResponse, self).__init__(xml)
 
 
-class TransactionDataResponse(PagadorResponse):
+class TransactionDataResponse(PagadorDictResponse):
+    STATUS = {
+        0: 'Unknown',
+        1: 'Captured',
+        2: 'Authorized',
+        3: 'Not Authorized',
+        4: 'Voided',
+        5: 'Refunded',
+        6: 'Waiting',
+        7: 'Unqualified',
+    }
 
     def __init__(self, xml):
-        self._fields = getattr(self, '_fields', {})
-
-        self._fields['order_id'] = 'OrderId'
-        self._fields['acquirer_transaction_id'] = 'AcquirerTransactionId'
-        self._fields['payment_method'] = ('PaymentMethod', int)
-        self._fields['payment_method_name'] = 'PaymentMethodName'
-        self._fields['error_code'] = 'ErrorCode'
-        self._fields['error_message'] = 'ErrorMessage'
-        self._fields['authorization_code'] = 'AuthorizationCode'
-        self._fields['number_of_payments'] = ('NumberOfPayments', int)
-        self._fields['currency'] = 'Currency'
-        self._fields['country'] = 'Country'
-        self._fields['transaction_type'] = 'TransactionType'
-        self._fields['status'] = ('Status', int)
-        self._fields['received_date'] = ('ReceivedDate', to_date)
-        self._fields['captured_date'] = ('CapturedDate', to_date)
-        self._fields['voided_date'] = ('VoidedDate', to_date)
-        self._fields['credit_card_token'] = 'CreditCardToken'
-
         super(TransactionDataResponse, self).__init__(xml)
+        body = self.body.get('GetTransactionDataResponse').get('GetTransactionDataResult')
+        self.get_body_data(body)
+        if self.success:
+            self.format_transactions(body)
+            self.transaction = self.transactions[0]
+            del self.transactions
+        else:
+            error_items = body.get('ErrorReportDataCollection').get('ErrorReportDataResponse')
+            self.format_errors(error_items)
 
 
 class ProtectedCardResponse(object):
