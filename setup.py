@@ -11,7 +11,7 @@ readme = open(os.path.join(cwd, 'README.md')).read()
 
 setup(
     name='braspag',
-    version='0.5.3',
+    version='0.5.4',
     description="Python library to consume Braspag SOAP Web services",
     long_description=readme,
     author='Sergio Oliveira',

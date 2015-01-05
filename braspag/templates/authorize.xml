@@ -95,11 +95,14 @@
               {% if transaction.card_number %}
                 <CardHolder>{{ transaction.card_holder }}</CardHolder>
                 <CardNumber>{{ transaction.card_number }}</CardNumber>
-                <CardSecurityCode>{{ transaction.card_security_code }}</CardSecurityCode>
                 <CardExpirationDate>{{ transaction.card_exp_date }}</CardExpirationDate>
                 {% if transaction.save_card %}
                   <SaveCreditCard>{{ transaction.save_card }}</SaveCreditCard>
                 {% endif %}
+              {% endif %}
+
+              {% if transaction.card_security_code %}
+                <CardSecurityCode>{{ transaction.card_security_code }}</CardSecurityCode>
               {% endif %}
 
               {% if transaction.card_token %}
