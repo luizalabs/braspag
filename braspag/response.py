@@ -223,6 +223,7 @@ class CreditCardRefundResponse(PagadorDictResponse):
         0: 'Refund Confirmed',
         1: 'Refund Denied',
         2: 'Invalid Transaction',
+        3: 'Refund Accepted'
     }
 
     def __init__(self, xml):
