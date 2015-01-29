@@ -37,7 +37,7 @@ class GetTransactionDataTest(BraspagTestCase):
         assert response.transactions[0]['return_message'] == u'Operation Successful'
         assert response.transactions[0]['status'] == 1  # TODO: transformar em constante, tabela 13.10.1 do manual do pagador
         assert response.transactions[0]['status_message'] == 'Authorized'
-        assert response.transactions[0]['masked_credit_card_number'] == u'000000******0001'
+        assert response.transactions[0]['masked_credit_card_number'] == u'0000********0001'
 
         response = yield self.braspag.get_order_data(order_id=response.braspag_order_id)
 
