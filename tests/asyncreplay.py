@@ -165,8 +165,8 @@ def async_replay_patch(fetch_mock, recordfile):
             try:
                 response = recording.to_httpresponse(request)
             except Exception as e:
-                logger.debug('Found recorded response, but cant parse it. Returning None.')
-                raise gen.Return(None)
+                logger.debug('Found recorded response, but cant parse it.')
+                raise
             else:
                 raise gen.Return(recording.to_httpresponse(request))
 
