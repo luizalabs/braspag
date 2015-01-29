@@ -157,7 +157,10 @@ def async_replay_patch(fetch_mock, recordfile):
             try:
                 response = yield AsyncHTTPClient(force_instance=True).fetch(request)
             except HTTPError as e:
-                response = e.response
+                if e.response:
+                    response = e.response
+                else:
+                    response = e
             raise gen.Return(response)
 
         recording = ReplayRecordingManager.load(recordfile)
