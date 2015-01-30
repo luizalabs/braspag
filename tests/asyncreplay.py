@@ -176,7 +176,7 @@ def async_replay_patch(fetch_mock, recordfile):
         try:
             response = yield client.fetch(request)
         except HTTPError as e:
-            response = e.response
+            response = e.response or e
 
         recording[request] = response
         ReplayRecordingManager.save(recording, recordfile)
