@@ -109,7 +109,7 @@ class BaseRequest(object):
         except HTTPError as e:
             if e.code == 599:
                 self.log.error('No response received.')
-                raise HTTPTimeoutError(e.code, e.message)
+                raise HTTPTimeoutError(e.code, e.message, e.response)
             raise
 
         self.log.warning('Response code: %s body: %s' % (response.code, self.pretty_xml(response.body)))
