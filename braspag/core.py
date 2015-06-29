@@ -107,8 +107,10 @@ class BaseRequest(object):
         try:
             response = yield self.http_client.fetch(self._get_request(url, xml))
         except HTTPError as e:
-            self.log.error('No response received.')
-            raise e.code == 599 and HTTPTimeoutError(e.code, e.message) or HTTPError(e.code, e.message)
+            if e.code == 599:
+                self.log.error('No response received.')
+                raise HTTPTimeoutError(e.code, e.message)
+            raise
 
         self.log.warning('Response code: %s body: %s' % (response.code, self.pretty_xml(response.body)))
         raise gen.Return(response)
