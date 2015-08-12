@@ -102,6 +102,12 @@ class PagadorDictResponse(object):
             if transaction_items.has_key('ReturnMessage'):
                 data['return_message'] = transaction_items.get('ReturnMessage')
 
+            if transaction_items.has_key('ErrorCode'):
+                data['error_code'] = transaction_items.get('ErrorCode')
+
+            if transaction_items.has_key('ErrorMessage'):
+                data['error_message'] = transaction_items.get('ErrorMessage')
+
             if transaction_items.has_key('PaymentMethod'):
                 data['payment_method'] = to_int(transaction_items.get('PaymentMethod'))
 
