@@ -97,7 +97,7 @@ def method_must_be_redesigned(func):
         return func(*args, **kwargs)  # pragma: no cover
     return new_func
 
-def mask_credit_card_from_xml(xml):
+def mask_card_data_from_xml(xml):
     '''
     It receives a xml and return it all credit cards tags masked.
     '''
@@ -111,6 +111,13 @@ def mask_credit_card_from_xml(xml):
                                                               last_digits)
         return masked
 
+    def mask_card_security_code(match_obj):
+        card_security_code = match_obj.group(1)
+        asterisks = u'*' * len(card_security_code)
+        masked = u'<CardSecurityCode>{0}</CardSecurityCode>'.format(asterisks)
+        return masked
+
     xml = re.sub(r'<CardNumber>(\d*)</CardNumber>', mask_card_number, xml)
+    xml = re.sub(r'<CardSecurityCode>(\d*)</CardSecurityCode>', mask_card_security_code, xml)
     return xml
 

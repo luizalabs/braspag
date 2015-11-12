@@ -4,7 +4,7 @@ from __future__ import absolute_import
 
 from braspag.utils import to_bool
 from braspag.utils import to_int
-from braspag.utils import mask_credit_card_from_xml
+from braspag.utils import mask_card_data_from_xml
 from braspag.utils import is_valid_guid
 from .base import BraspagTestCase
 
@@ -23,22 +23,45 @@ class UtilsTest(BraspagTestCase):
         assert to_int('1') == 1
         assert to_int('1432-2') == 14322
 
-    def test_mask_credit_card_from_xml_with_exiting_card_number(self):
+    def test_mask_card_data_from_xml_with_existing_card_number(self):
         xml = '<CardNumber>1234567890123456</CardNumber>'
 
-        assert (mask_credit_card_from_xml(xml) ==
+        assert (mask_card_data_from_xml(xml) ==
                 '<CardNumber>123456******3456</CardNumber>')
 
-    def test_mask_credit_card_from_xml_with_non_existing_card_number(self):
+    def test_mask_card_data_from_xml_with_non_existing_card_number(self):
         xml = '<html><head></head><body></body></html>'
 
-        assert mask_credit_card_from_xml(xml) == xml
+        assert mask_card_data_from_xml(xml) == xml
 
-    def test_mask_credit_card_from_xml_with_mixed_xml(self):
+    def test_mask_card_data_from_xml_with_mixed_xml(self):
         xml = '<html><head></head><CardNumber>1234567890123456</CardNumber><body></body></html>'
 
-        assert (mask_credit_card_from_xml(xml) ==
+        assert (mask_card_data_from_xml(xml) ==
                 '<html><head></head><CardNumber>123456******3456</CardNumber><body></body></html>')
+
+    def test_mask_card_data_from_xml_with_existing_cvv(self):
+        xml = '<CardSecurityCode>123</CardSecurityCode>'
+
+        assert (mask_card_data_from_xml(xml) ==
+                '<CardSecurityCode>***</CardSecurityCode>')
+
+    def test_mask_card_data_from_xml_with_non_existing_cvv(self):
+        xml = '<html><head></head><body></body></html>'
+
+        assert mask_card_data_from_xml(xml) == xml
+
+    def test_mask_card_data_from_xml_with_mixed_xml_with_cvv(self):
+        xml = '<html><head></head><CardSecurityCode>1234</CardSecurityCode><body></body></html>'
+
+        assert (mask_card_data_from_xml(xml) ==
+                '<html><head></head><CardSecurityCode>****</CardSecurityCode><body></body></html>')
+
+    def test_mask_card_data_from_xml_with_existing_card_number_and_cvv(self):
+        xml = '<CardNumber>1234567890123456</CardNumber><CardSecurityCode>123</CardSecurityCode>'
+
+        assert (mask_card_data_from_xml(xml) ==
+                '<CardNumber>123456******3456</CardNumber><CardSecurityCode>***</CardSecurityCode>')
 
     def test_is_valid_guid(self):
         self.assertTrue(is_valid_guid('555d97f7-92ab-4907-a8d0-f2ba51afe470'))
