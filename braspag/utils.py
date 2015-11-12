@@ -53,7 +53,7 @@ def to_unicode(value):
     return unescape(value)
 
 def to_date(value):
-    return datetime.strptime(value, '%m/%d/%Y %H:%M:%S %p')
+    return datetime.strptime(value, '%m/%d/%Y %I:%M:%S %p')
 
 def to_int(value):
     if value.isdigit():
