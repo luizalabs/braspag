@@ -2,8 +2,10 @@
 
 from __future__ import absolute_import
 
+from datetime import datetime
 from braspag.utils import to_bool
 from braspag.utils import to_int
+from braspag.utils import to_date
 from braspag.utils import mask_card_data_from_xml
 from braspag.utils import is_valid_guid
 from .base import BraspagTestCase
@@ -22,6 +24,11 @@ class UtilsTest(BraspagTestCase):
 
         assert to_int('1') == 1
         assert to_int('1432-2') == 14322
+
+        assert to_date('11/15/2015 12:19:44 AM') == datetime(2015, 11, 15, 0, 19, 44)
+        assert to_date('11/14/2015 01:57:23 PM') == datetime(2015, 11, 14, 13, 57, 23)
+        with self.assertRaises(TypeError):
+            to_date(None)
 
     def test_mask_card_data_from_xml_with_existing_card_number(self):
         xml = '<CardNumber>1234567890123456</CardNumber>'
