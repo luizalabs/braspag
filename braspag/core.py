@@ -11,7 +11,7 @@ import jinja2
 
 from .utils import spaceless
 from .utils import is_valid_guid
-from .utils import mask_credit_card_from_xml
+from .utils import mask_card_data_from_xml
 from .exceptions import BraspagException
 from .exceptions import HTTPTimeoutError
 from .response import CreditCardAuthorizationResponse
@@ -102,7 +102,7 @@ class BaseRequest(object):
 
     @gen.coroutine
     def fetch(self, xml, url):
-        masked_xml = mask_credit_card_from_xml(xml)
+        masked_xml = mask_card_data_from_xml(xml)
         self.log.warning('Request: %s' % self.pretty_xml(masked_xml))
         try:
             response = yield self.http_client.fetch(self._get_request(url, xml))
