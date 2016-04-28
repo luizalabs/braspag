@@ -61,6 +61,6 @@ class AuthorizeCaptureRefundTest(BraspagTestCase):
         assert response.transactions[0]['amount'] == 100000
         assert response.correlation_id == u'782a56e2-2dae-11e2-b3ee-080027d29772'
         assert response.transactions[0]['return_code'] == '0' # TODO: transformar em constante
-        assert response.transactions[0]['return_message'] == u'Operation Successful - 1,000.00'
+        assert response.transactions[0]['return_message'] == u'Operation Successful'
         assert response.transactions[0]['status'] == 0  # TODO: transformar em constante
         assert response.transactions[0]['status_message'] == 'Refund Confirmed'

@@ -51,3 +51,21 @@ class ProtectedCardTest(BraspagTestCase):
             'just_click_key': response.just_click_key
         })
         assert response.success == True
+
+    @gen_test
+    def test_add_card_and_get_card(self):
+        response = yield self.protected_card.add_card(**{
+            'customer_name': u'José da Silva',
+            'card_holder': 'Jose da Silva',
+            'card_number': '1000000000000001',
+            'card_expiration': '05/2018',
+            'customer_identification': 1,
+        })
+        assert response.success == True
+
+        response = yield self.protected_card.get_card(**{
+            'just_click_key': response.just_click_key
+        })
+        assert response.success == True
+        assert response.card_expiration == '05/2018'
+        assert response.card_number == '1000000000000001'
