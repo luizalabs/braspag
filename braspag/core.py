@@ -23,6 +23,7 @@ from .response import CreditCardCaptureResponse
 from .response import TransactionDataResponse
 from .response import BraspagOrderDataResponse
 from .response import AddCardResponse
+from .response import GetCardResponse
 from .response import InvalidateCardResponse
 from .response import BraspagOrderIdDataResponse
 from .consts import TransactionType
@@ -465,3 +466,18 @@ class ProtectedCardRequest(BaseRequest):
 
         response = yield self._request(self._render_template('invalidate_card.xml', kwargs))
         raise gen.Return(InvalidateCardResponse(response.body))
+
+    @gen.coroutine
+    def get_card(self, **kwargs):
+        """Get all card data by JustClickKey
+
+        The arguments to the Cartão Protegido API call must be passed as keyword
+        arguments and are:
+
+        :arg just_click_key
+        :arg just_click_alias
+        """
+        assert kwargs.has_key('just_click_key'), 'get_card requires just_click_key variable'
+
+        response = yield self._request(self._render_template('get_card.xml', kwargs))
+        raise gen.Return(GetCardResponse(response.body))
