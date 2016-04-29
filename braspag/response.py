@@ -399,7 +399,7 @@ class InvalidateCardResponse(ProtectedCardResponse):
 class GetCardResponse(ProtectedCardResponse):
     def __init__(self, xml):
         super(GetCardResponse, self).__init__(xml)
-        body = self.body.get('GetCreditCardResponse').get('GetCreditCardResult')
+        body = self.body.get('GetCreditCardResponse', {}).get('GetCreditCardResult', {})
         self.get_body_data(body)
 
         if self.success:
@@ -408,5 +408,5 @@ class GetCardResponse(ProtectedCardResponse):
             self.card_expiration = body.get('CardExpiration')
             self.masked_card_number = body.get('MaskedCardNumber')
         else:
-            error_items = body.get('ErrorReportCollection').get('ErrorReport')
+            error_items = body.get('ErrorReportCollection', {}).get('ErrorReport')
             self.format_errors(error_items)
