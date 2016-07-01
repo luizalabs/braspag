@@ -3,7 +3,7 @@
 <GetTransactionData xmlns="https://www.pagador.com.br/query/pagadorquery">
   <transactionDataRequest>
     <RequestId>{{ request_id }}</RequestId>
-    <Version>1.0</Version>
+    <Version>1.1</Version>
     <MerchantId>{{ merchant_id }}</MerchantId>
     <BraspagTransactionId>{{ transaction_id }}</BraspagTransactionId>
   </transactionDataRequest>
