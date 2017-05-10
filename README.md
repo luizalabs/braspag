@@ -1,6 +1,6 @@
 # Braspag
 
-[![Build Status](https://secure.travis-ci.org/luizalabs/braspag.png?branch=master)](https://travis-ci.org/luizalabs/braspag)
+[![CircleCI](https://circleci.com/gh/luizalabs/braspag/tree/master.svg?style=svg)](https://circleci.com/gh/luizalabs/braspag/tree/master)
 
 ## Getting Started
 
