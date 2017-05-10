@@ -20,10 +20,10 @@ Get the source
 
 Source: https://github.com/TracyWebTech/braspag
 
-Travis: |build-status|
+CircleCI: |build-status|
 
-.. |BUILD-STATUS| image:: https://secure.travis-ci.org/TracyWebTech/braspag.png?branch=master 
-    :target: https://travis-ci.org/TracyWebTech/braspag
+.. |BUILD-STATUS| image:: https://circleci.com/gh/luizalabs/braspag/tree/master.svg?style=svg
+    :target: https://circleci.com/gh/luizalabs/braspag/
 
 Indices and tables
 ==================
