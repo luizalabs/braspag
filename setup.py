@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import os
-from setuptools import setup
+from setuptools import setup, find_packages
 
 
 cwd = os.path.abspath(os.path.dirname(__file__))
@@ -22,7 +22,7 @@ setup(
     author='Sergio Oliveira',
     author_email='sergio@tracy.com.br',
     url='https://github.com/luizalabs/braspag',
-    packages=['braspag'],
+    packages=find_packages(exclude=["*.tests", "*.tests.*", "tests.*", "tests"]),
     package_data={
         'braspag': ['templates/*.xml'],
     },
