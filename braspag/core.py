@@ -9,7 +9,7 @@ import urlparse
 
 import jinja2
 
-from braspag.extensions.newrelic.contextmanager import newrelic_external_trace
+from .extensions.newrelic.contextmanager import newrelic_external_trace
 from .utils import spaceless
 from .utils import is_valid_guid
 from .utils import mask_card_data_from_xml
