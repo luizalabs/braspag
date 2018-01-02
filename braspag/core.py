@@ -9,6 +9,7 @@ import urlparse
 
 import jinja2
 
+from braspag.extensions.newrelic.contextmanager import newrelic_external_trace
 from .utils import spaceless
 from .utils import is_valid_guid
 from .utils import mask_card_data_from_xml
@@ -34,7 +35,6 @@ from tornado.httpclient import HTTPRequest
 from tornado.httpclient import HTTPError
 from tornado import httpclient
 from tornado import gen
-import re
 
 
 class BaseRequest(object):
@@ -105,13 +105,15 @@ class BaseRequest(object):
     def fetch(self, xml, url):
         masked_xml = mask_card_data_from_xml(xml)
         self.log.warning('Request: %s' % self.pretty_xml(masked_xml))
-        try:
-            response = yield self.http_client.fetch(self._get_request(url, xml))
-        except HTTPError as e:
-            if e.code == 599:
-                self.log.error('No response received.')
-                raise HTTPTimeoutError(e.code, e.message, e.response)
-            raise
+        request = self._get_request(url, xml)
+        with newrelic_external_trace(request.url, request.method):
+            try:
+                response = yield self.http_client.fetch(request)
+            except HTTPError as e:
+                if e.code == 599:
+                    self.log.error('No response received.')
+                    raise HTTPTimeoutError(e.code, e.message, e.response)
+                raise
 
         self.log.warning('Response code: %s body: %s' % (response.code, self.pretty_xml(response.body)))
         raise gen.Return(response)
