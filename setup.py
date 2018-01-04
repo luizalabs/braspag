@@ -16,7 +16,7 @@ with open('requirements/test.txt', 'r') as requirements_file:
 
 setup(
     name='braspag',
-    version='0.5.14',
+    version='1.0.0',
     description="Python library to consume Braspag SOAP Web services",
     long_description=readme,
     author='Sergio Oliveira',
