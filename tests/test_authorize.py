@@ -49,7 +49,7 @@ class AuthorizeTest(BraspagTestCase):
         assert response.transactions[0]['return_message'] == u'Operation Successful'
         assert response.transactions[0]['status'] == 1  # TODO: transformar em constante, tabela 13.10.1 do manual do pagador
         assert response.transactions[0]['status_message'] == 'Authorized'
-        assert response.transactions[0]['masked_credit_card_number'] == u'0000********0001'
+        assert response.transactions[0]['masked_credit_card_number'] == u'000000******0001'
 
         assert response.transactions[1]['amount'] == 190099
         assert response.transactions[1]['payment_method'] == 997
@@ -57,7 +57,7 @@ class AuthorizeTest(BraspagTestCase):
         assert response.transactions[1]['return_message'] == u'Operation Successful'
         assert response.transactions[1]['status'] == 1  # TODO: transformar em constante, tabela 13.10.1 do manual do pagador
         assert response.transactions[1]['status_message'] == 'Authorized'
-        assert response.transactions[1]['masked_credit_card_number'] == u'9000********0001'
+        assert response.transactions[1]['masked_credit_card_number'] == u'900000******0001'
 
     @gen_test
     def test_authorize_with_card_token(self):
