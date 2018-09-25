@@ -127,7 +127,7 @@ class BraspagRequest(BaseRequest):
     def __init__(self, merchant_id=None, homologation=False, request_timeout=10):
         super(BraspagRequest, self).__init__(merchant_id, homologation, request_timeout)
         if homologation:
-            self.url = 'https://homologacao.pagador.com.br'
+            self.url = 'https://transactionsandbox.pagador.com.br'
         else:
             self.url = 'https://www.pagador.com.br'  # pragma: no cover
 
@@ -420,8 +420,8 @@ class ProtectedCardRequest(BaseRequest):
     def __init__(self, merchant_id=None, homologation=False, request_timeout=10):
         super(ProtectedCardRequest, self).__init__(merchant_id, homologation, request_timeout)
         if homologation:
-            self.url = 'https://homologacao.braspag.com.br'
-            self.protected_card_service = '/services/v2/testenvironment/cartaoprotegido.asmx'
+            self.url = 'https://cartaoprotegidosandbox.braspag.com.br'
+            self.protected_card_service = '/V2/cartaoprotegido.asmx'
         else:
             self.url = 'https://cartaoprotegido.braspag.com.br'
             self.protected_card_service = '/services/v2/cartaoprotegido.asmx'
