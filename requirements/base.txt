@@ -1,4 +1,4 @@
-Jinja2==2.9.5
-tornado==3.2.2
-xmltodict==0.10.2
-newrelic==2.98.0.81
+Jinja2>=2.10
+newrelic>=4.4.1.104
+tornado>=3.2.2
+xmltodict>=0.11.0
