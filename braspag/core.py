@@ -1,5 +1,4 @@
 # -*- encoding: utf-8 -*-
-
 from __future__ import absolute_import
 
 import uuid
@@ -37,6 +36,9 @@ from tornado import httpclient
 from tornado import gen
 
 
+logger = logging.getLogger(__name__)
+
+
 class BaseRequest(object):
     def __init__(self, merchant_id=None, homologation=False, request_timeout=10):
         self.merchant_id = merchant_id
@@ -46,7 +48,6 @@ class BaseRequest(object):
             loader=jinja2.PackageLoader('braspag'),
         )
 
-        self.log = logging.getLogger('braspag')
         self.http_client = httpclient.AsyncHTTPClient()
 
         # services
@@ -104,18 +105,38 @@ class BaseRequest(object):
     @gen.coroutine
     def fetch(self, xml, url):
         masked_xml = mask_card_data_from_xml(xml)
-        self.log.warning('Request: %s' % self.pretty_xml(masked_xml))
         request = self._get_request(url, xml)
+
+        logger.info(
+            u'URL: {url} - Request: {body}'.format(
+                url=url,
+                body=masked_xml
+            )
+        )
+
         with newrelic_external_trace(request.url, request.method):
             try:
                 response = yield self.http_client.fetch(request)
             except HTTPError as e:
+                logger.error(
+                    u'Request to "{url}" with body "{body}" ended '
+                    u'with {error}.'.format(
+                        url=url,
+                        body=masked_xml,
+                        error=e.message
+                    )
+                )
                 if e.code == 599:
-                    self.log.error('No response received.')
                     raise HTTPTimeoutError(e.code, e.message, e.response)
                 raise
 
-        self.log.warning('Response code: %s body: %s' % (response.code, self.pretty_xml(response.body)))
+        logger.info(
+            u'Response code: {code} body: {body}'.format(
+                code=response.code,
+                body=response.body
+            )
+        )
+
         raise gen.Return(response)
 
 
