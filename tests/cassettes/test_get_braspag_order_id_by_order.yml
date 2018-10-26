@@ -1,0 +1,112 @@
+interactions:
+- request:
+    body: "<?xml version=\"1.0\" encoding=\"utf-8\"?><soap:Envelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\
+      \ xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\
+      ><soap:Body><AuthorizeTransaction xmlns=\"https://www.pagador.com.br/webservice/pagador\"\
+      ><request><RequestId>782a56e2-2dae-11e2-b3ee-080027d29772</RequestId><Version>1.1</Version><OrderData><MerchantId>F9B44052-4AE0-E311-9406-0026B939D54B</MerchantId><OrderId>cb739926-9968-4b52-af87-83c395110a3f</OrderId><BraspagOrderId\
+      \ xsi:nil=\"true\" /></OrderData><CustomerData><CustomerIdentity>12345678900</CustomerIdentity><CustomerName>Jos\xE9\
+      \ da Silva</CustomerName><CustomerEmail>jose123@dasilva.com.br</CustomerEmail><CustomerAddressData\
+      \ xsi:nil=\"true\" /><DeliveryAddressData xsi:nil=\"true\" /></CustomerData><PaymentDataCollection><PaymentDataRequest\
+      \ xsi:type=\"CreditCardDataRequest\"><PaymentMethod>997</PaymentMethod><Amount>100000</Amount><Currency>BRL</Currency><Country>BRA</Country><NumberOfPayments>1</NumberOfPayments><PaymentPlan>0</PaymentPlan><TransactionType>1</TransactionType><CardHolder>Jose\
+      \ da Silva</CardHolder><CardNumber>0000000000000001</CardNumber><CardExpirationDate>05/2018</CardExpirationDate><SaveCreditCard>true</SaveCreditCard><CardSecurityCode>123</CardSecurityCode><AdditionalDataCollection><AdditionalDataRequest><Name>SoftDescriptor</Name><Value>Sax\
+      \ Alto Chin</Value></AdditionalDataRequest></AdditionalDataCollection></PaymentDataRequest></PaymentDataCollection></request></AuthorizeTransaction></soap:Body></soap:Envelope>"
+    headers:
+      Content-Type: [text/xml; charset=UTF-8]
+    method: POST
+    uri: https://transactionsandbox.pagador.com.br/webservice/pagadorTransaction.asmx
+  response:
+    body: {string: !!python/unicode '<?xml version="1.0" encoding="utf-8"?><soap:Envelope
+        xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns:xsd="http://www.w3.org/2001/XMLSchema"><soap:Body><AuthorizeTransactionResponse
+        xmlns="https://www.pagador.com.br/webservice/pagador"><AuthorizeTransactionResult><CorrelationId>782a56e2-2dae-11e2-b3ee-080027d29772</CorrelationId><Success>true</Success><ErrorReportDataCollection
+        /><OrderData><OrderId>cb739926-9968-4b52-af87-83c395110a3f</OrderId><BraspagOrderId>d36efbc9-3bd4-4428-82f0-0d66c3473bba</BraspagOrderId></OrderData><PaymentDataCollection><PaymentDataResponse
+        xsi:type="CreditCardDataResponse"><BraspagTransactionId>39d0fc3d-6696-4af7-9873-a168f57be357</BraspagTransactionId><PaymentMethod>997</PaymentMethod><Amount>100000</Amount><AcquirerTransactionId>1025112104231</AcquirerTransactionId><AuthorizationCode>406490</AuthorizationCode><ReturnCode>4</ReturnCode><ReturnMessage>Operation
+        Successful</ReturnMessage><Status>1</Status><CreditCardToken>d30df93a-61fb-4b8b-a5f2-025ab9508f12</CreditCardToken><ProofOfSale>2104231</ProofOfSale><MaskedCreditCardNumber>000000******0001</MaskedCreditCardNumber></PaymentDataResponse></PaymentDataCollection></AuthorizeTransactionResult></AuthorizeTransactionResponse></soap:Body></soap:Envelope>'}
+    headers:
+    - !!python/tuple
+      - Request-Context
+      - ['appId=cid-v1:f2b4fc3b-1105-4562-b6c2-5fb9af7ccd01']
+    - !!python/tuple
+      - X-Aspnet-Version
+      - [4.0.30319]
+    - !!python/tuple
+      - Set-Cookie
+      - [ARRAffinity=489e6003bd5abdb90bffb61b6c62a4173feedaba9f21123c4fda4adcaade9fed;Path=/;Domain=transactionsandbox.pagador.com.br]
+    - !!python/tuple
+      - X-Powered-By
+      - [ASP.NET, ARR/3.0]
+    - !!python/tuple
+      - Content-Length
+      - ['1316']
+    - !!python/tuple
+      - Server
+      - [Microsoft-IIS/10.0]
+    - !!python/tuple
+      - Connection
+      - [close]
+    - !!python/tuple
+      - Cache-Control
+      - ['private, max-age=0']
+    - !!python/tuple
+      - Date
+      - ['Fri, 26 Oct 2018 02:21:03 GMT']
+    - !!python/tuple
+      - X-Frame-Options
+      - [SAMEORIGIN]
+    - !!python/tuple
+      - Content-Type
+      - [text/xml; charset=utf-8]
+    status: {code: 200, message: OK}
+    url: https://transactionsandbox.pagador.com.br/webservice/pagadorTransaction.asmx
+- request:
+    body: !!python/unicode '<?xml version="1.0" encoding="utf-8"?><soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"><soap:Body><GetOrderIdData
+      xmlns="https://www.pagador.com.br/query/pagadorquery"><orderIdDataRequest><RequestId>782a56e2-2dae-11e2-b3ee-080027d29772</RequestId><Version>1.0</Version><MerchantId>F9B44052-4AE0-E311-9406-0026B939D54B</MerchantId><OrderId>cb739926-9968-4b52-af87-83c395110a3f</OrderId></orderIdDataRequest></GetOrderIdData></soap:Body></soap:Envelope>'
+    headers:
+      Content-Type: [text/xml; charset=UTF-8]
+    method: POST
+    uri: https://transactionsandbox.pagador.com.br/services/pagadorQuery.asmx
+  response:
+    body: {string: !!python/unicode '<?xml version="1.0" encoding="utf-8"?><soap:Envelope
+        xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns:xsd="http://www.w3.org/2001/XMLSchema"><soap:Body><GetOrderIdDataResponse
+        xmlns="https://www.pagador.com.br/query/pagadorquery"><GetOrderIdDataResult><CorrelationId>782a56e2-2dae-11e2-b3ee-080027d29772</CorrelationId><Success>true</Success><ErrorReportDataCollection
+        /><OrderIdDataCollection><OrderIdTransactionResponse><CorrelationId>00000000-0000-0000-0000-000000000000</CorrelationId><Success>true</Success><ErrorReportDataCollection
+        /><BraspagOrderId>d36efbc9-3bd4-4428-82f0-0d66c3473bba</BraspagOrderId><BraspagTransactionId><guid>39d0fc3d-6696-4af7-9873-a168f57be357</guid></BraspagTransactionId></OrderIdTransactionResponse></OrderIdDataCollection></GetOrderIdDataResult></GetOrderIdDataResponse></soap:Body></soap:Envelope>'}
+    headers:
+    - !!python/tuple
+      - Request-Context
+      - ['appId=cid-v1:ecbab492-e2d4-4be8-85fd-d16db40c874d']
+    - !!python/tuple
+      - X-Aspnet-Version
+      - [4.0.30319]
+    - !!python/tuple
+      - Set-Cookie
+      - [ARRAffinity=489e6003bd5abdb90bffb61b6c62a4173feedaba9f21123c4fda4adcaade9fed;Path=/;Domain=transactionsandbox.pagador.com.br]
+    - !!python/tuple
+      - X-Powered-By
+      - [ASP.NET, ARR/3.0]
+    - !!python/tuple
+      - Content-Length
+      - ['899']
+    - !!python/tuple
+      - Server
+      - [Microsoft-IIS/10.0]
+    - !!python/tuple
+      - Connection
+      - [close]
+    - !!python/tuple
+      - Cache-Control
+      - ['private, max-age=0']
+    - !!python/tuple
+      - Date
+      - ['Fri, 26 Oct 2018 02:21:04 GMT']
+    - !!python/tuple
+      - X-Frame-Options
+      - [SAMEORIGIN]
+    - !!python/tuple
+      - Content-Type
+      - [text/xml; charset=utf-8]
+    status: {code: 200, message: OK}
+    url: https://transactionsandbox.pagador.com.br/services/pagadorQuery.asmx
+version: 1
