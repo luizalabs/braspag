@@ -32,6 +32,7 @@ from xml.dom import minidom
 
 from tornado.httpclient import HTTPRequest
 from tornado.httpclient import HTTPError
+from tornado.escape import to_unicode
 from tornado import httpclient
 from tornado import gen
 
@@ -123,7 +124,7 @@ class BaseRequest(object):
                     u'with {error}.'.format(
                         url=url,
                         body=masked_xml,
-                        error=e.message
+                        error=to_unicode(e.message)
                     )
                 )
                 if e.code == 599:
@@ -133,7 +134,7 @@ class BaseRequest(object):
         logger.info(
             u'Response code: {code} body: {body}'.format(
                 code=response.code,
-                body=response.body
+                body=to_unicode(response.body)
             )
         )
 
