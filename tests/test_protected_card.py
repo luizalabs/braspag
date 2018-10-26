@@ -1,17 +1,19 @@
 # -*- coding: utf8 -*-
-
 from __future__ import absolute_import
 
-from braspag.consts import PAYMENT_METHODS
-from braspag.exceptions import BraspagException
-from braspag.exceptions import HTTPTimeoutError
-from .base import BraspagTestCase
 from tornado.testing import gen_test
+
+from braspag.consts import PAYMENT_METHODS
+from braspag.exceptions import BraspagException, HTTPTimeoutError
+
+from .base import BraspagTestCase
+from .vcrutils import replay
 
 
 class ProtectedCardTest(BraspagTestCase):
 
     @gen_test
+    @replay
     def test_add_card(self):
         response = yield self.protected_card.add_card(**{
             'customer_name': u'José da Silva',
@@ -23,6 +25,7 @@ class ProtectedCardTest(BraspagTestCase):
         assert response.success == True
 
     @gen_test
+    @replay
     def test_add_card_without_required_field(self):
         response = yield self.protected_card.add_card(**{
             'customer_name': u'José da Silva',
@@ -34,9 +37,13 @@ class ProtectedCardTest(BraspagTestCase):
         })
         assert response.success == False
         assert response.errors[0]['error_code'] == u'749'
-        assert response.errors[0]['error_message'] == u'JustClick alias already exists'
+        assert (
+            response.errors[0]['error_message'] ==
+            u'JustClick alias already exists'
+        )
 
     @gen_test
+    @replay
     def test_invalidate_card(self):
         response = yield self.protected_card.add_card(**{
             'customer_name': u'José da Silva',
@@ -53,6 +60,7 @@ class ProtectedCardTest(BraspagTestCase):
         assert response.success == True
 
     @gen_test
+    @replay
     def test_add_card_and_get_card(self):
         response = yield self.protected_card.add_card(**{
             'customer_name': u'José da Silva',
