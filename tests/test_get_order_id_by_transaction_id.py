@@ -1,32 +1,35 @@
 # -*- coding: utf8 -*-
-
 from __future__ import absolute_import
 
-from braspag.consts import PAYMENT_METHODS
-from .base import BraspagTestCase
 from tornado.testing import gen_test
+
+from braspag.consts import PAYMENT_METHODS
+
+from .base import BraspagTestCase
+from .vcrutils import replay
 
 
 class GetOrderIdTest(BraspagTestCase):
 
     @gen_test
+    @replay
     def test_get_order_id(self):
         response = yield self.braspag.authorize(**{
-                                     'request_id': '782a56e2-2dae-11e2-b3ee-080027d29772',
-                                     'order_id': '2cf84e51-c45b-45d9-9f64-554a6e088668',
-                                     'customer_id': '12345678900',
-                                     'customer_name': u'José da Silva',
-                                     'customer_email': 'jose123@dasilva.com.br',
-                                     'transactions': [{
-                                         'amount': 100000,
-                                         'card_holder': 'Jose da Silva',
-                                         'card_number': '0000000000000001',
-                                         'card_security_code': '123',
-                                         'card_exp_date': '05/2018',
-                                         'save_card': True,
-                                         'payment_method': PAYMENT_METHODS['Simulated']['BRL'],
-                                     }],
-                                 })
+            'request_id': '782a56e2-2dae-11e2-b3ee-080027d29772',
+            'order_id': '2cf84e51-c45b-45d9-9f64-554a6e088668',
+            'customer_id': '12345678900',
+            'customer_name': u'José da Silva',
+            'customer_email': 'jose123@dasilva.com.br',
+            'transactions': [{
+                'amount': 100000,
+                'card_holder': 'Jose da Silva',
+                'card_number': '0000000000000001',
+                'card_security_code': '123',
+                'card_exp_date': '05/2018',
+                'save_card': True,
+                'payment_method': PAYMENT_METHODS['Simulated']['BRL'],
+            }],
+        })
 
         assert response.success == True
         assert response.transactions[0]['amount'] == 100000
@@ -38,6 +41,8 @@ class GetOrderIdTest(BraspagTestCase):
         assert response.transactions[0]['status'] == 1  # TODO: transformar em constante, tabela 13.10.1 do manual do pagador
         assert response.transactions[0]['status_message'] == 'Authorized'
 
-        response = yield self.braspag.get_order_id_by_transaction_id(transaction_id=response.transactions[0]['braspag_transaction_id'])
+        response = yield self.braspag.get_order_id_by_transaction_id(
+            transaction_id=response.transactions[0]['braspag_transaction_id']
+        )
 
         assert response.success == True

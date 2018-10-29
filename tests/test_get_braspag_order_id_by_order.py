@@ -1,16 +1,19 @@
 # -*- coding: utf8 -*-
-
 from __future__ import absolute_import
+from uuid import uuid4
+
+from tornado.testing import gen_test
 
 from braspag.consts import PAYMENT_METHODS
+
 from .base import BraspagTestCase
-from tornado.testing import gen_test
-from uuid import uuid4
+from .vcrutils import replay
 
 
 class GetTransactionDataTest(BraspagTestCase):
 
     @gen_test
+    @replay
     def test_get_braspag_order_id_by_order(self):
         order_id = uuid4()
         response = yield self.braspag.authorize(**{
