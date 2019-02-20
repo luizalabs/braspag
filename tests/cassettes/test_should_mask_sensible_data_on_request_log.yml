@@ -1,0 +1,42 @@
+interactions:
+- request:
+    body: "<?xml version=\"1.0\" encoding=\"utf-8\"?><soap:Envelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\
+      \ xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\
+      ><soap:Body><SaveCreditCard xmlns=\"http://www.cartaoprotegido.com.br/WebService/\"\
+      ><saveCreditCardRequestWS><MerchantKey>7E5B3E1F-AB80-4E4A-B00F-9297C99D211C</MerchantKey><CustomerIdentification>1</CustomerIdentification><CustomerName>Jos\xE9\
+      \ da Silva</CustomerName><CardHolder>Jose da Silva</CardHolder><CardNumber>1000000000000001</CardNumber><CardExpiration>05/2018</CardExpiration><JustClickAlias></JustClickAlias><DataCollection></DataCollection></saveCreditCardRequestWS></SaveCreditCard></soap:Body></soap:Envelope>"
+    headers:
+      Content-Type: [text/xml; charset=UTF-8]
+    method: POST
+    uri: https://cartaoprotegidosandbox.braspag.com.br/V2/cartaoprotegido.asmx
+  response:
+    body: {string: !!python/unicode '<?xml version="1.0" encoding="utf-8"?><soap:Envelope
+        xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns:xsd="http://www.w3.org/2001/XMLSchema"><soap:Body><SaveCreditCardResponse
+        xmlns="http://www.cartaoprotegido.com.br/WebService/"><SaveCreditCardResult><Success>true</Success><CorrelationId
+        xsi:nil="true" /><ErrorReportCollection /><JustClickKey>0f17881c-ec65-44c2-b0b5-b335aca3af7e</JustClickKey></SaveCreditCardResult></SaveCreditCardResponse></soap:Body></soap:Envelope>'}
+    headers:
+    - !!python/tuple
+      - Content-Length
+      - ['539']
+    - !!python/tuple
+      - X-Powered-By
+      - [ASP.NET, ARR/3.0]
+    - !!python/tuple
+      - Server
+      - [Microsoft-IIS/10.0]
+    - !!python/tuple
+      - Connection
+      - [close]
+    - !!python/tuple
+      - Cache-Control
+      - ['private, max-age=0']
+    - !!python/tuple
+      - Date
+      - ['Wed, 20 Feb 2019 13:04:35 GMT']
+    - !!python/tuple
+      - Content-Type
+      - [text/xml; charset=utf-8]
+    status: {code: 200, message: OK}
+    url: https://cartaoprotegidosandbox.braspag.com.br/V2/cartaoprotegido.asmx
+version: 1
