@@ -4,7 +4,7 @@ interactions:
       \ xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\
       ><soap:Body><SaveCreditCard xmlns=\"http://www.cartaoprotegido.com.br/WebService/\"\
       ><saveCreditCardRequestWS><MerchantKey>7E5B3E1F-AB80-4E4A-B00F-9297C99D211C</MerchantKey><CustomerIdentification>1</CustomerIdentification><CustomerName>Jos\xE9\
-      \ da Silva</CustomerName><CardHolder>Jose da Silva</CardHolder><CardNumber>0000000000000001</CardNumber><CardExpiration>05/2018</CardExpiration><JustClickAlias></JustClickAlias><DataCollection></DataCollection></saveCreditCardRequestWS></SaveCreditCard></soap:Body></soap:Envelope>"
+      \ da Silva</CustomerName><CardHolder>Jose da Silva</CardHolder><CardNumber>1000000000000001</CardNumber><CardExpiration>05/2018</CardExpiration><JustClickAlias></JustClickAlias><DataCollection></DataCollection></saveCreditCardRequestWS></SaveCreditCard></soap:Body></soap:Envelope>"
     headers:
       Content-Type: [text/xml; charset=UTF-8]
     method: POST
@@ -14,7 +14,7 @@ interactions:
         xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xmlns:xsd="http://www.w3.org/2001/XMLSchema"><soap:Body><SaveCreditCardResponse
         xmlns="http://www.cartaoprotegido.com.br/WebService/"><SaveCreditCardResult><Success>true</Success><CorrelationId
-        xsi:nil="true" /><ErrorReportCollection /><JustClickKey>402a3fd6-e0ad-44ef-bb59-161ca9ad98e7</JustClickKey></SaveCreditCardResult></SaveCreditCardResponse></soap:Body></soap:Envelope>'}
+        xsi:nil="true" /><ErrorReportCollection /><JustClickKey>6a10e10a-170d-4d7c-9691-877def432f30</JustClickKey></SaveCreditCardResult></SaveCreditCardResponse></soap:Body></soap:Envelope>'}
     headers:
     - !!python/tuple
       - Content-Length
@@ -33,7 +33,7 @@ interactions:
       - ['private, max-age=0']
     - !!python/tuple
       - Date
-      - ['Fri, 26 Oct 2018 02:38:34 GMT']
+      - ['Thu, 21 Feb 2019 12:46:16 GMT']
     - !!python/tuple
       - Content-Type
       - [text/xml; charset=utf-8]
@@ -42,7 +42,7 @@ interactions:
 - request:
     body: !!python/unicode '<?xml version="1.0" encoding="utf-8"?><soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
       xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"><soap:Body><InvalidateCreditCard
-      xmlns="http://www.cartaoprotegido.com.br/WebService/"><invalidateCreditCardRequestWS><MerchantKey>7E5B3E1F-AB80-4E4A-B00F-9297C99D211C</MerchantKey><JustClickKey>402a3fd6-e0ad-44ef-bb59-161ca9ad98e7</JustClickKey><JustClickAlias></JustClickAlias></invalidateCreditCardRequestWS></InvalidateCreditCard></soap:Body></soap:Envelope>'
+      xmlns="http://www.cartaoprotegido.com.br/WebService/"><invalidateCreditCardRequestWS><MerchantKey>7E5B3E1F-AB80-4E4A-B00F-9297C99D211C</MerchantKey><JustClickKey>6a10e10a-170d-4d7c-9691-877def432f30</JustClickKey><JustClickAlias></JustClickAlias></invalidateCreditCardRequestWS></InvalidateCreditCard></soap:Body></soap:Envelope>'
     headers:
       Content-Type: [text/xml; charset=UTF-8]
     method: POST
@@ -71,7 +71,7 @@ interactions:
       - ['private, max-age=0']
     - !!python/tuple
       - Date
-      - ['Fri, 26 Oct 2018 02:38:36 GMT']
+      - ['Thu, 21 Feb 2019 12:46:17 GMT']
     - !!python/tuple
       - Content-Type
       - [text/xml; charset=utf-8]

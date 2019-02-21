@@ -1,5 +1,6 @@
 # -*- coding: utf8 -*-
 from __future__ import absolute_import
+from copy import deepcopy
 
 import mock
 from tornado.testing import gen_test
@@ -13,29 +14,29 @@ from .vcrutils import replay
 
 class ProtectedCardTest(BraspagTestCase):
 
+    def setUp(self):
+        super(ProtectedCardTest, self).setUp()
+        self.add_card_payload = {
+            'customer_name': u'José da Silva',
+            'card_holder': 'Jose da Silva',
+            'card_number': '1000000000000001',
+            'card_expiration': '05/2018',
+            'customer_identification': 1
+        }
+
     @gen_test
     @replay
     def test_add_card(self):
-        response = yield self.protected_card.add_card(**{
-            'customer_name': u'José da Silva',
-            'card_holder': 'Jose da Silva',
-            'card_number': '0000000000000001',
-            'card_expiration': '05/2018',
-            'customer_identification': 1,
-        })
+        response = yield self.protected_card.add_card(**self.add_card_payload)
         assert response.success == True
 
     @gen_test
     @replay
     def test_add_card_without_required_field(self):
-        response = yield self.protected_card.add_card(**{
-            'customer_name': u'José da Silva',
-            'card_holder': 'Jose da Silva',
-            'card_number': '0000000000000001',
-            'just_click_alias': 'XPTO',
-            'card_expiration': '05/2018',
-            'customer_identification': 1,
-        })
+        payload = deepcopy(self.add_card_payload)
+        payload['just_click_alias'] = 'XPTO'
+        response = yield self.protected_card.add_card(**payload)
+
         assert response.success == False
         assert response.errors[0]['error_code'] == u'749'
         assert (
@@ -46,13 +47,7 @@ class ProtectedCardTest(BraspagTestCase):
     @gen_test
     @replay
     def test_invalidate_card(self):
-        response = yield self.protected_card.add_card(**{
-            'customer_name': u'José da Silva',
-            'card_holder': 'Jose da Silva',
-            'card_number': '0000000000000001',
-            'card_expiration': '05/2018',
-            'customer_identification': 1,
-        })
+        response = yield self.protected_card.add_card(**self.add_card_payload)
         assert response.success == True
 
         response = yield self.protected_card.invalidate_card(**{
@@ -63,13 +58,7 @@ class ProtectedCardTest(BraspagTestCase):
     @gen_test
     @replay
     def test_add_card_and_get_card(self):
-        response = yield self.protected_card.add_card(**{
-            'customer_name': u'José da Silva',
-            'card_holder': 'Jose da Silva',
-            'card_number': '1000000000000001',
-            'card_expiration': '05/2018',
-            'customer_identification': 1,
-        })
+        response = yield self.protected_card.add_card(**self.add_card_payload)
         assert response.success == True
 
         response = yield self.protected_card.get_card(**{
@@ -83,13 +72,9 @@ class ProtectedCardTest(BraspagTestCase):
     @replay
     def test_should_mask_sensible_data_on_request_log(self):
         with mock.patch('braspag.core.logger.info') as mock_log:
-            response = yield self.protected_card.add_card(**{
-                'customer_name': u'José da Silva',
-                'card_holder': 'Jose da Silva',
-                'card_number': '1000000000000001',
-                'card_expiration': '05/2018',
-                'customer_identification': 1,
-            })
+            response = yield self.protected_card.add_card(
+                **self.add_card_payload
+            )
 
         request_log = mock_log.call_args_list[0][0]
 
@@ -99,13 +84,7 @@ class ProtectedCardTest(BraspagTestCase):
     @gen_test
     @replay
     def test_should_mask_sensible_data_on_response_log(self):
-        response = yield self.protected_card.add_card(**{
-            'customer_name': u'José da Silva',
-            'card_holder': 'Jose da Silva',
-            'card_number': '1000000000000001',
-            'card_expiration': '05/2018',
-            'customer_identification': 1,
-        })
+        response = yield self.protected_card.add_card(**self.add_card_payload)
 
         with mock.patch('braspag.core.logger.info') as mock_log:
             response = yield self.protected_card.get_card(**{

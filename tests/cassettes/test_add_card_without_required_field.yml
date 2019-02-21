@@ -4,7 +4,7 @@ interactions:
       \ xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\
       ><soap:Body><SaveCreditCard xmlns=\"http://www.cartaoprotegido.com.br/WebService/\"\
       ><saveCreditCardRequestWS><MerchantKey>7E5B3E1F-AB80-4E4A-B00F-9297C99D211C</MerchantKey><CustomerIdentification>1</CustomerIdentification><CustomerName>Jos\xE9\
-      \ da Silva</CustomerName><CardHolder>Jose da Silva</CardHolder><CardNumber>0000000000000001</CardNumber><CardExpiration>05/2018</CardExpiration><JustClickAlias>XPTO</JustClickAlias><DataCollection></DataCollection></saveCreditCardRequestWS></SaveCreditCard></soap:Body></soap:Envelope>"
+      \ da Silva</CustomerName><CardHolder>Jose da Silva</CardHolder><CardNumber>1000000000000001</CardNumber><CardExpiration>05/2018</CardExpiration><JustClickAlias>XPTO</JustClickAlias><DataCollection></DataCollection></saveCreditCardRequestWS></SaveCreditCard></soap:Body></soap:Envelope>"
     headers:
       Content-Type: [text/xml; charset=UTF-8]
     method: POST
@@ -34,7 +34,7 @@ interactions:
       - ['private, max-age=0']
     - !!python/tuple
       - Date
-      - ['Fri, 26 Oct 2018 02:38:33 GMT']
+      - ['Thu, 21 Feb 2019 12:46:15 GMT']
     - !!python/tuple
       - Content-Type
       - [text/xml; charset=utf-8]
