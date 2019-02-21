@@ -14,7 +14,7 @@ interactions:
         xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xmlns:xsd="http://www.w3.org/2001/XMLSchema"><soap:Body><SaveCreditCardResponse
         xmlns="http://www.cartaoprotegido.com.br/WebService/"><SaveCreditCardResult><Success>true</Success><CorrelationId
-        xsi:nil="true" /><ErrorReportCollection /><JustClickKey>715775f5-496e-4250-99bf-e9d1c21dbee1</JustClickKey></SaveCreditCardResult></SaveCreditCardResponse></soap:Body></soap:Envelope>'}
+        xsi:nil="true" /><ErrorReportCollection /><JustClickKey>0f17881c-ec65-44c2-b0b5-b335aca3af7e</JustClickKey></SaveCreditCardResult></SaveCreditCardResponse></soap:Body></soap:Envelope>'}
     headers:
     - !!python/tuple
       - Content-Length
@@ -33,7 +33,7 @@ interactions:
       - ['private, max-age=0']
     - !!python/tuple
       - Date
-      - ['Thu, 21 Feb 2019 12:46:15 GMT']
+      - ['Wed, 20 Feb 2019 13:04:35 GMT']
     - !!python/tuple
       - Content-Type
       - [text/xml; charset=utf-8]

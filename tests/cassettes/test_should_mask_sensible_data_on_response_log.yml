@@ -14,7 +14,7 @@ interactions:
         xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xmlns:xsd="http://www.w3.org/2001/XMLSchema"><soap:Body><SaveCreditCardResponse
         xmlns="http://www.cartaoprotegido.com.br/WebService/"><SaveCreditCardResult><Success>true</Success><CorrelationId
-        xsi:nil="true" /><ErrorReportCollection /><JustClickKey>6a10e10a-170d-4d7c-9691-877def432f30</JustClickKey></SaveCreditCardResult></SaveCreditCardResponse></soap:Body></soap:Envelope>'}
+        xsi:nil="true" /><ErrorReportCollection /><JustClickKey>68a585dd-63ce-4589-be18-e8cc631c74cc</JustClickKey></SaveCreditCardResult></SaveCreditCardResponse></soap:Body></soap:Envelope>'}
     headers:
     - !!python/tuple
       - Content-Length
@@ -33,7 +33,7 @@ interactions:
       - ['private, max-age=0']
     - !!python/tuple
       - Date
-      - ['Thu, 21 Feb 2019 12:46:16 GMT']
+      - ['Wed, 20 Feb 2019 13:17:35 GMT']
     - !!python/tuple
       - Content-Type
       - [text/xml; charset=utf-8]
@@ -41,8 +41,8 @@ interactions:
     url: https://cartaoprotegidosandbox.braspag.com.br/V2/cartaoprotegido.asmx
 - request:
     body: !!python/unicode '<?xml version="1.0" encoding="utf-8"?><soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-      xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"><soap:Body><InvalidateCreditCard
-      xmlns="http://www.cartaoprotegido.com.br/WebService/"><invalidateCreditCardRequestWS><MerchantKey>7E5B3E1F-AB80-4E4A-B00F-9297C99D211C</MerchantKey><JustClickKey>6a10e10a-170d-4d7c-9691-877def432f30</JustClickKey><JustClickAlias></JustClickAlias></invalidateCreditCardRequestWS></InvalidateCreditCard></soap:Body></soap:Envelope>'
+      xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"><soap:Body><GetCreditCard
+      xmlns="http://www.cartaoprotegido.com.br/WebService/"><getCreditCardRequestWS><MerchantKey>7E5B3E1F-AB80-4E4A-B00F-9297C99D211C</MerchantKey><JustClickKey>68a585dd-63ce-4589-be18-e8cc631c74cc</JustClickKey><JustClickAlias></JustClickAlias></getCreditCardRequestWS></GetCreditCard></soap:Body></soap:Envelope>'
     headers:
       Content-Type: [text/xml; charset=UTF-8]
     method: POST
@@ -50,13 +50,13 @@ interactions:
   response:
     body: {string: !!python/unicode '<?xml version="1.0" encoding="utf-8"?><soap:Envelope
         xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xmlns:xsd="http://www.w3.org/2001/XMLSchema"><soap:Body><InvalidateCreditCardResponse
-        xmlns="http://www.cartaoprotegido.com.br/WebService/"><InvalidateCreditCardResult><Success>true</Success><CorrelationId
-        xsi:nil="true" /><ErrorReportCollection /></InvalidateCreditCardResult></InvalidateCreditCardResponse></soap:Body></soap:Envelope>'}
+        xmlns:xsd="http://www.w3.org/2001/XMLSchema"><soap:Body><GetCreditCardResponse
+        xmlns="http://www.cartaoprotegido.com.br/WebService/"><GetCreditCardResult><Success>true</Success><CorrelationId
+        xsi:nil="true" /><ErrorReportCollection /><CardHolder>JOSE DA SILVA</CardHolder><CardNumber>1000000000000001</CardNumber><CardExpiration>05/2018</CardExpiration><MaskedCardNumber>100000******0001</MaskedCardNumber></GetCreditCardResult></GetCreditCardResponse></soap:Body></soap:Envelope>'}
     headers:
     - !!python/tuple
       - Content-Length
-      - ['498']
+      - ['642']
     - !!python/tuple
       - X-Powered-By
       - [ASP.NET, ARR/3.0]
@@ -71,7 +71,7 @@ interactions:
       - ['private, max-age=0']
     - !!python/tuple
       - Date
-      - ['Thu, 21 Feb 2019 12:46:17 GMT']
+      - ['Wed, 20 Feb 2019 13:17:35 GMT']
     - !!python/tuple
       - Content-Type
       - [text/xml; charset=utf-8]

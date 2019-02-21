@@ -134,7 +134,9 @@ class BaseRequest(object):
         logger.info(
             u'Response code: {code} body: {body}'.format(
                 code=response.code,
-                body=to_unicode(response.body)
+                body=mask_card_data_from_xml(
+                    to_unicode(response.body)
+                )
             )
         )
 
