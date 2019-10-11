@@ -4,7 +4,7 @@ test:
 	@pytest -x --no-cov
 
 coverage:
-	@pytest -x --no-cov-on-fail --cov --cov-report=term
+	@pytest -x --no-cov-on-fail --cov --cov-config=.coveragerc --cov-report=term
 
 clean:
 	rm -rf cover/
