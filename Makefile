@@ -1,10 +1,10 @@
 export PYTHONDONTWRITEBYTECODE=1
 
 test:
-	ASYNC_TEST_TIMEOUT=30.0 pytest -x --no-cov
+	@pytest -x --no-cov
 
 coverage:
-	ASYNC_TEST_TIMEOUT=30.0 pytest -x --no-cov-on-fail --cov --cov-report=term
+	@pytest -x --no-cov-on-fail --cov --cov-report=term
 
 clean:
 	rm -rf cover/
