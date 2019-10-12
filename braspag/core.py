@@ -164,7 +164,7 @@ class BraspagRequest(BaseRequest):
         """Make the http request to Braspag.
         """
         url = self._get_url(query and self.query_service or self.transaction_service)
-        response = yield gen.Task(self.fetch, xml, url)
+        response = yield self.fetch(xml, url)
         raise gen.Return(response)
 
     @gen.coroutine
@@ -455,7 +455,7 @@ class ProtectedCardRequest(BaseRequest):
         """Make the http request to Braspag.
         """
         url = self._get_url(self.protected_card_service)
-        response = yield gen.Task(self.fetch, xml, url)
+        response = yield self.fetch(xml, url)
         raise gen.Return(response)
 
     @gen.coroutine
