@@ -1,9 +1,15 @@
+install_dependencies: &install_dependencies
+  name: Install Dependencies
+  command: |
+    pip install -r requirements/base.txt
+    pip install -r requirements/test.txt
+
 version: 2
 jobs:
-  build:
+  python27:
     docker:
       - image: python:2.7
-    working_directory: "~/braspag/braspag/"
+    working_directory: "~/braspag/braspag-py27/"
     steps:
       - checkout
       - restore_cache:
@@ -11,10 +17,7 @@ jobs:
             - pip-{{ .Branch }}
             - pip-master
       - run:
-          name: Install Dependencies
-          command: |
-              pip install -r requirements/base.txt
-              pip install -r requirements/test.txt
+          <<: *install_dependencies
       - save_cache:
           key: pip-{{ .Branch }}
           paths:
@@ -22,3 +25,28 @@ jobs:
       - run:
           name: Run Tests
           command: make test
+  python37:
+    docker:
+      - image: python:3.7
+      working_directory: "~/braspag/braspag-py37/"
+      steps:
+        - checkout
+        - restore_cache:
+            keys:
+              - pip-{{ .Branch }}
+              - pip-master
+        - run:
+            <<: *install_dependencies
+        - save_cache:
+            key: pip-{{ .Branch }}
+            paths:
+              - "~/.cache/pip"
+        - run:
+            name: Run Tests
+            command: make test
+workflows:
+  version: 2
+  build_and_test:
+    jobs:
+      - python27
+      - python37
