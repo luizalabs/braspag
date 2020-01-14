@@ -1,11 +1,10 @@
 export PYTHONDONTWRITEBYTECODE=1
 
 test:
-	ASYNC_TEST_TIMEOUT=30.0 nosetests -v --stop --with-coverage --cover-package=braspag
+	@pytest -x --no-cov
 
 coverage:
-	ASYNC_TEST_TIMEOUT=30.0 nosetests -v --stop --with-coverage --cover-package=braspag --cover-html
-	open cover/index.html
+	@pytest -x --no-cov-on-fail --cov --cov-config=.coveragerc --cov-report=term
 
 clean:
 	rm -rf cover/
